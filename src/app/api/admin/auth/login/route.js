@@ -1,5 +1,5 @@
-import Admin from '@/models/admin'
-import connectDB from '@/lib/DBconnection'
+import Admin from '@/src/models/admin'
+import connectDB from '@/src/lib/DBconnection'
 import jwt from 'jsonwebtoken'
 
 export async function POST(req) {

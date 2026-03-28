@@ -1,7 +1,9 @@
+"use client";
+
 import { Geist, Geist_Mono } from "next/font/google";
-import ScrollToTop from "@/app/components/additionals/scrollToTop";
-import { UserProvider } from "@/app/components/additionals/userContext"; 
-import ProtectedAdminRoute from "@/app/components/additionals/protectedAdminRoute"; 
+import ScrollToTop from "@/src/app/components/additionals/scrollToTop";
+import { UserProvider } from "@/src/app/components/additionals/userContext";
+import ProtectedAdminRoute from "@/src/app/components/additionals/protectedAdminRoute";
 // import FloatingDashboardButton from "./components/FloatingDashboardButton";
 
 const geistSans = Geist({
@@ -13,11 +15,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-export const metadata = {
-  title: "Admin Section",
-  description: "Admin Section",
-};
 
 export default function RootLayout({ children }) {
   return (
