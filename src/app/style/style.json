@@ -1,5 +1,23 @@
 {
   "themes": {
+    "jobAppRuby": {
+      "name": "Job App Ruby",
+      "description": "Original deep crimson and red theme",
+      "colors": {
+        "primary": "#8B0000",
+        "secondary": "#B22222",
+        "background": "#FFFFFF",
+        "text": "#1F2933",
+        "accent": "#FFE4E4",
+        "cardBg": "#FFFFFF",
+        "border": "#E5E7EB",
+        "shadow": "rgba(0,0,0,0.1)",
+        "muted": "#6B7280",
+        "success": "#10B981",
+        "warning": "#F59E0B",
+        "error": "#EF4444"
+      }
+    },
     "luxuryGold": {
       "name": "Luxury Gold",
       "description": "Opulent dark base with warm champagne gold accents",
@@ -375,5 +393,5 @@
     "warning":    "--warning",
     "error":      "--error"
   },
-  "defaultTheme": "luxuryGold"
+  "defaultTheme": "jobAppRuby"
 }

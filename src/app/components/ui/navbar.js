@@ -37,20 +37,327 @@ import {
   Zap,
   Palette,
   Check,
+  ChevronRight,
+  X,
+  Menu,
+  Search,
+  TrendingUp,
+  Clock,
+  Award,
+  BookOpen,
+  Headphones,
+  MessageCircle,
+  Gift,
+  Share2,
+  Info,
 } from "lucide-react";
 
 const navLinks = [
-  { name: "Home", href: "/", icon: Home, badge: null },
-  { name: "Find Job", href: "/jobs", icon: BriefcaseBusiness, badge: "Hot" },
-  { name: "Register", href: "/register", icon: UserRoundPlus, badge: null },
-  { name: "Success Stories", href: "/sucessStories", icon: Trophy, badge: "New" },
-  { name: "Interview Prep", href: "/interview-prep", icon: FolderKanban, badge: null },
-  { name: "Gallery", href: "/gallery", icon: Images, badge: null },
-  { name: "Resources", href: "/resources", icon: FileText, badge: null },
-  { name: "Privacy Policies", href: "/privacy-policies", icon: Shield, badge: null },
-  { name: "About", href: "/about", icon: Users, badge: null },
-  { name: "Contact", href: "/contact", icon: Mail, badge: null },
+  { name: "Home", href: "/", icon: Home, badge: null, category: "main" },
+  { name: "Find Job", href: "/jobs", icon: BriefcaseBusiness, badge: "Hot", category: "main" },
+  { name: "Success Stories", href: "/sucessStories", icon: Trophy, badge: "New", category: "main" },
+  { name: "Interview Prep", href: "/interview-prep", icon: FolderKanban, badge: null, category: "resources" },
+  { name: "Resources", href: "/resources", icon: FileText, badge: null, category: "resources" },
+  { name: "Gallery", href: "/gallery", icon: Images, badge: null, category: "resources" },
+  { name: "About", href: "/about", icon: Users, badge: null, category: "info" },
+  { name: "Contact", href: "/contact", icon: Mail, badge: null, category: "info" },
+  { name: "Privacy Policies", href: "/privacy-policies", icon: Shield, badge: null, category: "info" },
 ];
+
+// Quick action items for mobile
+const quickActions = [
+  { name: "Search Jobs", icon: Search, href: "/jobs", color: "primary" },
+  { name: "Saved Jobs", icon: Bookmark, href: "/saved-jobs", color: "secondary", requiresAuth: true },
+  { name: "Notifications", icon: Bell, href: "/notifications", color: "accent", requiresAuth: true },
+  { name: "Help Center", icon: HelpCircle, href: "/help", color: "muted" },
+];
+
+const quickActionIconColors = {
+  primary: "var(--primary)",
+  secondary: "var(--secondary)",
+  accent: "var(--accent)",
+  muted: "var(--muted)",
+};
+
+// Categories for mobile menu organization
+const menuCategories = {
+  main: { title: "Main Navigation", icon: Home },
+  resources: { title: "Resources & Tools", icon: BookOpen },
+  info: { title: "Information", icon: Info },
+};
+
+// Theme categories for mobile
+const themeCategories = {
+  all: { name: "All Themes", icon: Palette, color: "var(--primary)" },
+  vibrant: { name: "Vibrant", icon: Sparkles, color: "#FF6B6B" },
+  dark: { name: "Dark", icon: Moon, color: "#4A5568" },
+  light: { name: "Light", icon: Sun, color: "#FBBF24" },
+  professional: { name: "Professional", icon: BriefcaseBusiness, color: "#3B82F6" },
+  creative: { name: "Creative", icon: Palette, color: "#EC4899" }
+};
+
+// Mobile Theme Selector Component
+const MobileThemeSelector = memo(({ isOpen, onClose, activeThemeOption, themeOptions, setColorTheme }) => {
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const sheetRef = useRef(null);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+
+  // Filter themes based on category and search
+  const filteredThemes = useMemo(() => {
+    let filtered = themeOptions || [];
+
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(theme => theme.category === selectedCategory);
+    }
+
+    return filtered;
+  }, [themeOptions, selectedCategory]);
+
+  // Touch handlers for swipe to close
+  const handleTouchStart = (e) => {
+    setTouchStart(e.touches[0].clientY);
+    setTouchEnd(e.touches[0].clientY);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.touches[0].clientY);
+
+    const delta = e.touches[0].clientY - touchStart;
+    if (sheetRef.current && delta > 0) {
+      // Swipe down gesture
+      if (delta < 300) {
+        // Apply resistance the further we swipe down
+        const pullDistance = delta * 0.7;
+        sheetRef.current.style.transform = `translateY(${pullDistance}px)`;
+        sheetRef.current.style.transition = 'none'; // Instant follow finger
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (sheetRef.current) {
+      sheetRef.current.style.transform = "";
+      sheetRef.current.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)'; // Spring back or close smoothly
+    }
+
+    const delta = touchEnd - touchStart;
+    if (touchEnd !== 0 && delta > 80) {
+      onClose();
+    }
+
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] lg:hidden"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fadeIn" />
+
+      {/* Bottom Sheet */}
+      <div
+        ref={sheetRef}
+        className="absolute bottom-0 left-0 right-0 bg-card-bg rounded-t-3xl shadow-2xl overflow-hidden animate-slideUp max-h-[85vh] flex flex-col transition-transform duration-300 ease-out"
+      >
+        <div
+          className="shrink-0 cursor-grab active:cursor-grabbing touch-none z-[201] relative"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Drag Handle */}
+          <div className="flex justify-center pt-3 pb-2">
+            <div
+              className="w-12 h-1.5 rounded-full"
+              style={{ background: "var(--primary)" }}
+            />
+          </div>
+
+          {/* Header */}
+          <div className="px-5 pt-2 pb-4 border-b border-border bg-card-bg">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <Palette className="w-6 h-6 text-primary" />
+                <h2 className="text-xl font-bold text-text">Theme Gallery</h2>
+              </div>
+              <span
+                className="px-3 py-1 text-xs font-bold text-white rounded-full bg-primary"
+                style={{ background: "var(--primary)" }}
+              >
+                {filteredThemes.length} Themes
+              </span>
+            </div>
+          </div>
+        </div>
+
+
+        {/* Theme Grid */}
+        <div className="flex-1 overflow-y-auto px-5 py-3 pb-6">
+          {filteredThemes.length > 0 ? (
+            <div className="space-y-3">
+              {filteredThemes.map((option, index) => (
+                <button
+                  key={option.key}
+                  onClick={() => {
+                    setColorTheme(option.key);
+                    onClose();
+                  }}
+                  className={`w-full text-left transition-all duration-300 rounded-2xl p-4 ${activeThemeOption?.key === option.key
+                      ? "ring-2 ring-primary shadow-lg bg-primary/5"
+                      : "hover:bg-muted/5 border border-border"
+                    }`}
+                  style={{
+                    animation: `fadeIn 0.3s ease-out ${index * 0.05}s forwards`,
+                    opacity: 0,
+                    transform: "translateY(10px)"
+                  }}
+                >
+                  <div className="flex items-start space-x-4">
+                    {/* Color Preview */}
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex space-x-1">
+                        <div
+                          className="w-10 h-10 rounded-xl shadow-md"
+                          style={{ backgroundColor: option.colors.primary }}
+                        />
+                        <div
+                          className="w-10 h-10 rounded-xl shadow-md"
+                          style={{ backgroundColor: option.colors.secondary }}
+                        />
+                        <div
+                          className="w-10 h-10 rounded-xl shadow-md"
+                          style={{ backgroundColor: option.colors.accent }}
+                        />
+                      </div>
+                      <div
+                        className="w-full h-2 rounded-full"
+                        style={{ backgroundColor: option.colors.text }}
+                      />
+                    </div>
+
+                    {/* Theme Info */}
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-bold text-text text-lg">
+                          {option.name}
+                        </h3>
+                        {activeThemeOption?.key === option.key && (
+                          <div className="flex items-center space-x-1">
+                            <Check className="w-5 h-5 text-primary" />
+                            <span className="text-xs text-primary font-medium">Active</span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted mb-2 line-clamp-2">
+                        {option.description}
+                      </p>
+
+                      {/* Preview Tags */}
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor: `${option.colors.primary}20`,
+                            color: option.colors.primary
+                          }}
+                        >
+                          Primary
+                        </span>
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor: `${option.colors.secondary}20`,
+                            color: option.colors.secondary
+                          }}
+                        >
+                          Secondary
+                        </span>
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor: `${option.colors.accent}20`,
+                            color: option.colors.accent
+                          }}
+                        >
+                          Accent
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Preview Icon */}
+                    <div className="self-center">
+                      <ChevronRight className={`w-5 h-5 transition-transform duration-200 ${activeThemeOption?.key === option.key
+                          ? "text-primary translate-x-1"
+                          : "text-muted"
+                        }`} />
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Palette className="w-16 h-16 text-muted mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold text-text mb-2">No themes found</h3>
+              <p className="text-sm text-muted">
+                Try adjusting your filter
+              </p>
+              <button
+                onClick={() => {
+                  setSelectedCategory("all");
+                }}
+                className="mt-4 px-6 py-2 text-primary font-medium rounded-full border border-primary/30"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Quick Preview Bar */}
+        <div className="border-t border-border p-4 bg-card-bg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="flex -space-x-1">
+                <div
+                  className="w-6 h-6 rounded-full border-2 border-card-bg"
+                  style={{ backgroundColor: activeThemeOption?.colors.primary }}
+                />
+                <div
+                  className="w-6 h-6 rounded-full border-2 border-card-bg"
+                  style={{ backgroundColor: activeThemeOption?.colors.secondary }}
+                />
+                <div
+                  className="w-6 h-6 rounded-full border-2 border-card-bg"
+                  style={{ backgroundColor: activeThemeOption?.colors.accent }}
+                />
+              </div>
+              <span className="text-sm text-muted">
+                Current: <span className="text-text font-medium">{activeThemeOption?.name}</span>
+              </span>
+            </div>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm text-primary font-medium rounded-full bg-primary/10"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+MobileThemeSelector.displayName = 'MobileThemeSelector';
 
 // Memoized Nav Links Component
 const NavLinks = memo(({ isOpen, pathname }) => (
@@ -60,10 +367,10 @@ const NavLinks = memo(({ isOpen, pathname }) => (
       const isActive = pathname === link.href;
       return (
         <Link key={link.name} href={link.href}>
-          <span className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+          <span className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive ? 'bg-primary/10 text-primary' : 'text-text hover:bg-muted/10'}`}>
             <Icon className="w-4 h-4" />
             {link.name}
-            {link.badge && <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">{link.badge}</span>}
+            {link.badge && <span className="ml-2 text-xs bg-primary text-white px-2 py-0.5 rounded-full">{link.badge}</span>}
           </span>
         </Link>
       );
@@ -79,8 +386,6 @@ const Navbar = memo(() => {
   const router = useRouter();
   const {
     theme,
-    toggleTheme: contextToggleTheme,
-    mounted: themeMounted,
     colorTheme,
     setColorTheme,
     themeOptions,
@@ -96,12 +401,14 @@ const Navbar = memo(() => {
   const [imageError, setImageError] = useState(false);
   const [loginCallbackUrl, setLoginCallbackUrl] = useState("/");
   const [registerCallbackUrl, setRegisterCallbackUrl] = useState("/register");
-  const [swipeStartY, setSwipeStartY] = useState(0);
+  const [swipeStartX, setSwipeStartX] = useState(0);
   const [swipeDistance, setSwipeDistance] = useState(0);
-  const [hideMenuItems, setHideMenuItems] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [isMoreMenuClicked, setIsMoreMenuClicked] = useState(false);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const [isMobileThemeOpen, setIsMobileThemeOpen] = useState(false);
+  const [touchStartTime, setTouchStartTime] = useState(0);
+  const [activeCategory, setActiveCategory] = useState("main");
 
   const mobileMenuRef = useRef(null);
   const sheetRef = useRef(null);
@@ -120,6 +427,15 @@ const Navbar = memo(() => {
     [themeOptions, colorTheme]
   );
 
+  // Filtered links based on category
+  const filteredLinks = useMemo(() => {
+    let links = navLinks;
+    if (activeCategory !== "all") {
+      links = links.filter(link => link.category === activeCategory);
+    }
+    return links;
+  }, [activeCategory]);
+
   // Reset image error when session or image URL changes
   useEffect(() => {
     setImageError(false);
@@ -128,9 +444,6 @@ const Navbar = memo(() => {
   // Initialize component
   useEffect(() => {
     setMounted(true);
-    document.documentElement.style.setProperty('--ancient-red', '#8B0000');
-    document.documentElement.style.setProperty('--ancient-red-light', '#B22222');
-    document.documentElement.style.setProperty('--ancient-red-dark', '#660000');
   }, []);
 
   // Scroll handling with hide/show effect - optimized with debouncing
@@ -141,10 +454,8 @@ const Navbar = memo(() => {
 
     if (currentScrollY > lastScrollY && currentScrollY > 100) {
       setShowNavbar(false);
-      setHideMenuItems(true);
     } else {
       setShowNavbar(true);
-      setHideMenuItems(false);
     }
 
     if (currentScrollY > lastScrollY + 10) {
@@ -224,6 +535,7 @@ const Navbar = memo(() => {
         setIsMoreMenuClicked(false);
       }
 
+      // Close desktop theme menu when clicking outside
       if (
         isThemeMenuOpen &&
         themeMenuRef.current &&
@@ -242,43 +554,47 @@ const Navbar = memo(() => {
     };
   }, [isMoreMenuOpen, isThemeMenuOpen]);
 
-  // Touch swipe handlers for mobile menu
+  // Enhanced touch swipe handlers for mobile menu with direction detection
   const handleTouchStart = useCallback((e) => {
-    setSwipeStartY(e.touches[0].clientY);
+    setSwipeStartX(e.touches[0].clientX);
+    setTouchStartTime(Date.now());
     setSwipeDistance(0);
   }, []);
 
   const handleTouchMove = useCallback((e) => {
     if (!isOpen) return;
 
-    const currentY = e.touches[0].clientY;
-    const distance = currentY - swipeStartY;
+    const currentX = e.touches[0].clientX;
+    const distance = currentX - swipeStartX;
 
-    if (distance > 0) {
-      setSwipeDistance(distance);
+    // Only allow left swipe to close (negative distance)
+    if (distance < 0) {
+      setSwipeDistance(Math.abs(distance));
 
       if (sheetRef.current) {
-        sheetRef.current.style.transform = `translateY(${Math.min(distance * 0.7, 100)}px)`;
+        const translateX = Math.min(Math.abs(distance) * 0.5, 100);
+        sheetRef.current.style.transform = `translateX(-${translateX}px)`;
+        sheetRef.current.style.opacity = `${1 - (translateX / 200)}`;
       }
     }
-  }, [isOpen, swipeStartY]);
+  }, [isOpen, swipeStartX]);
 
   const handleTouchEnd = useCallback(() => {
-    if (swipeDistance > 100) {
+    const swipeDuration = Date.now() - touchStartTime;
+    const isQuickSwipe = swipeDuration < 300 && swipeDistance > 30;
+    const isSlowSwipe = swipeDistance > 80;
+
+    if (isQuickSwipe || isSlowSwipe) {
       setIsOpen(false);
     }
 
     if (sheetRef.current) {
-      sheetRef.current.style.transform = 'translateY(0)';
+      sheetRef.current.style.transform = 'translateX(0)';
+      sheetRef.current.style.opacity = '1';
     }
 
     setSwipeDistance(0);
-  }, [swipeDistance]);
-
-  // Toggle theme with smooth transition
-  const toggleTheme = () => {
-    contextToggleTheme();
-  };
+  }, [swipeDistance, touchStartTime]);
 
   // Handle logout with NextAuth
   const handleLogout = async () => {
@@ -350,14 +666,26 @@ const Navbar = memo(() => {
     }
   };
 
-  if (!mounted || !themeMounted) {
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  if (!mounted) {
     return (
-      <div className="h-16 bg-white dark:bg-black">
+      <div className="h-16 bg-card-bg">
         <div className="container mx-auto px-4 h-full flex items-center justify-between">
-          <div className="h-8 w-32 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-900 dark:to-black rounded-lg animate-pulse"></div>
+          <div className="h-8 w-32 bg-muted/20 rounded-lg animate-pulse"></div>
           <div className="flex items-center space-x-4">
-            <div className="h-8 w-8 bg-gray-200 dark:bg-gray-900 rounded-full animate-pulse"></div>
-            <div className="h-8 w-8 bg-gray-200 dark:bg-gray-900 rounded-full animate-pulse"></div>
+            <div className="h-8 w-8 bg-muted/20 rounded-full animate-pulse"></div>
+            <div className="h-8 w-8 bg-muted/20 rounded-full animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -372,36 +700,57 @@ const Navbar = memo(() => {
       {/* Register Modal */}
       <RegisterModal isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} callbackUrl={registerCallbackUrl} />
 
+      {/* Mobile Theme Selector */}
+      <MobileThemeSelector
+        isOpen={isMobileThemeOpen}
+        onClose={() => setIsMobileThemeOpen(false)}
+        activeThemeOption={activeThemeOption}
+        themeOptions={themeOptions}
+        setColorTheme={setColorTheme}
+      />
+
       <nav
         ref={navContainerRef}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${showNavbar ? 'translate-y-0' : '-translate-y-full'
           } ${isScrolled
-            ? 'bg-white dark:bg-black shadow-2xl border-b border-gray-100 dark:border-gray-900'
-            : 'bg-white dark:bg-black border-b border-transparent'
+            ? 'bg-card-bg/95 backdrop-blur-md shadow-lg border-b border-border'
+            : 'bg-card-bg border-b border-transparent'
           }`}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
 
-            {/* Logo with Ancient Red Accent */}
+            {/* Logo with Primary Color Accent */}
             <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group shrink-0">
               <div className="relative">
-                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-[#8B0000] to-[#B22222] flex items-center justify-center transform group-hover:rotate-[360deg] transition-all duration-700 shadow-lg shadow-red-900/30">
+                <div
+                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center transform group-hover:rotate-[360deg] transition-all duration-700 shadow-lg"
+                  style={{
+                    background: "var(--primary)",
+                    boxShadow: '0 10px 15px -3px var(--shadow)'
+                  }}
+                >
                   <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-[#B22222] to-[#FF2400] rounded-full animate-ping opacity-75"></div>
+                <div
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full animate-ping opacity-75"
+                  style={{ background: "var(--secondary)" }}
+                ></div>
               </div>
               <div className="flex flex-col justify-center">
-                <h1 className="text-lg sm:text-3xl font-bold bg-gradient-to-r from-[#8B0000] to-[#B22222] bg-clip-text text-transparent leading-tight">
+                <h1
+                  className="text-lg sm:text-3xl font-bold leading-tight"
+                  style={{ color: "var(--primary)" }}
+                >
                   Job App
                 </h1>
-                <p className="hidden sm:block text-xs text-gray-600 dark:text-gray-400 -mt-0.5 font-medium tracking-wide">Find Job, Earn, Grow</p>
+                <p className="hidden sm:block text-xs text-muted -mt-0.5 font-medium tracking-wide">Find Job, Earn, Grow</p>
               </div>
             </Link>
 
-            {/* Desktop Navigation with Ancient Red */}
+            {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center justify-center flex-1 px-8">
-              <div className="flex items-center space-x-1 bg-white dark:bg-black p-1.5 rounded-2xl border border-gray-200 dark:border-gray-900">
+              <div className="flex items-center space-x-1 bg-card-bg p-1.5 rounded-2xl border border-border">
                 {navLinks.slice(0, 5).map((link) => {
                   if (link.name === 'Register' && !isLoggedIn) {
                     return (
@@ -413,8 +762,8 @@ const Navbar = memo(() => {
                           setIsLoginOpen(true);
                         }}
                         className={`relative px-4 py-2 rounded-xl transition-all duration-300 group whitespace-nowrap ${pathname === link.href
-                          ? 'bg-gradient-to-r from-[#8B0000]/10 to-[#B22222]/10 text-[#8B0000] dark:text-[#B22222] border border-[#8B0000]/20'
-                          : 'text-gray-800 dark:text-gray-300 hover:text-[#8B0000] dark:hover:text-[#B22222] hover:bg-gray-50 dark:hover:bg-gray-900'
+                          ? 'bg-primary/10 text-primary border border-primary/20'
+                          : 'text-text hover:text-primary hover:bg-muted/10'
                           }`}
                       >
                         <span className="flex items-center space-x-2 text-sm font-semibold">
@@ -430,15 +779,18 @@ const Navbar = memo(() => {
                       key={link.name}
                       href={link.href}
                       className={`relative px-4 py-2 rounded-xl transition-all duration-300 group whitespace-nowrap ${pathname === link.href
-                        ? 'bg-gradient-to-r from-[#8B0000]/10 to-[#B22222]/10 text-[#8B0000] dark:text-[#B22222] border border-[#8B0000]/20'
-                        : 'text-gray-800 dark:text-gray-300 hover:text-[#8B0000] dark:hover:text-[#B22222] hover:bg-gray-50 dark:hover:bg-gray-900'
+                        ? 'bg-primary/10 text-primary border border-primary/20'
+                        : 'text-text hover:text-primary hover:bg-muted/10'
                         }`}
                     >
                       <span className="flex items-center space-x-2 text-sm font-semibold">
                         <link.icon className={`w-4 h-4 ${pathname === link.href ? 'stroke-[2.5px]' : 'stroke-2'}`} />
                         <span>{link.name}</span>
                         {link.badge && (
-                          <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-[#8B0000] to-[#B22222] text-white rounded-full shadow-sm">
+                          <span
+                            className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 text-[10px] font-bold text-white rounded-full shadow-sm"
+                            style={{ background: "var(--primary)" }}
+                          >
                             {link.badge}
                           </span>
                         )}
@@ -447,7 +799,7 @@ const Navbar = memo(() => {
                   );
                 })}
 
-                {/* More Dropdown - Fixed with proper hover/click behavior */}
+                {/* More Dropdown */}
                 <div
                   className="relative"
                   ref={moreMenuRef}
@@ -459,8 +811,8 @@ const Navbar = memo(() => {
                     aria-expanded={isMoreMenuOpen}
                     aria-haspopup="true"
                     className={`flex items-center space-x-1 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-300 ${isMoreMenuOpen || navLinks.slice(5).some(link => pathname === link.href)
-                      ? 'bg-gradient-to-r from-[#8B0000]/10 to-[#B22222]/10 text-[#8B0000] dark:text-[#B22222] border border-[#8B0000]/20'
-                      : 'text-gray-800 dark:text-gray-300 hover:text-[#8B0000] dark:hover:text-[#B22222] hover:bg-gray-50 dark:hover:bg-gray-900'
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-text hover:text-primary hover:bg-muted/10'
                       }`}
                   >
                     <span>More</span>
@@ -473,30 +825,32 @@ const Navbar = memo(() => {
                       ref={moreDropdownRef}
                       className="absolute right-0 top-full mt-2 w-56 origin-top-right z-50 animate-dropdown"
                     >
-                      <div className="py-2 bg-white dark:bg-black rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-900 overflow-hidden">
+                      <div className="py-2 bg-card-bg rounded-2xl shadow-xl border border-border overflow-hidden">
                         {navLinks.slice(5).map((link) => (
                           <Link
                             key={link.name}
                             href={link.href}
                             onClick={handleMoreLinkClick}
                             className={`flex items-center justify-between px-4 py-3 transition-all duration-200 group/item ${pathname === link.href
-                              ? 'bg-gradient-to-r from-[#8B0000]/5 to-[#B22222]/5'
-                              : 'hover:bg-gray-50 dark:hover:bg-gray-900'
+                              ? 'bg-primary/5'
+                              : 'hover:bg-muted/10'
                               }`}
                           >
                             <div className="flex items-center space-x-3">
-                              <div className={`p-1.5 rounded-lg transition-colors ${pathname === link.href
-                                ? 'bg-gradient-to-br from-[#8B0000] to-[#B22222]'
-                                : 'bg-gray-100 dark:bg-gray-900 group-hover/item:bg-[#8B0000]/10 dark:group-hover/item:bg-[#B22222]/20'
-                                }`}>
+                              <div
+                                className={`p-1.5 rounded-lg transition-colors ${pathname === link.href
+                                  ? 'bg-primary'
+                                  : 'bg-muted/10 group-hover/item:bg-primary/20'
+                                  }`}
+                              >
                                 <link.icon className={`w-4 h-4 ${pathname === link.href
                                   ? 'text-white'
-                                  : 'text-gray-600 dark:text-gray-400 group-hover/item:text-[#8B0000] dark:group-hover/item:text-[#B22222]'
+                                  : 'text-muted group-hover/item:text-primary'
                                   }`} />
                               </div>
                               <span className={`text-sm font-medium ${pathname === link.href
-                                ? 'text-[#8B0000] dark:text-[#B22222] font-bold'
-                                : 'text-gray-800 dark:text-gray-300'
+                                ? 'text-primary font-bold'
+                                : 'text-text'
                                 }`}>{link.name}</span>
                             </div>
                           </Link>
@@ -511,35 +865,47 @@ const Navbar = memo(() => {
             {/* Right Side Controls */}
             <div className="flex items-center space-x-2 sm:space-x-3">
 
-              {/* Color Bubble Theme Selector */}
-              <div className="relative" ref={themeMenuRef}>
+              {/* Desktop Theme Selector */}
+              <div className="relative hidden lg:block" ref={themeMenuRef}>
                 <button
                   onClick={() => setIsThemeMenuOpen((prev) => !prev)}
-                  className="relative p-2 sm:p-2.5 rounded-full bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 transition-all duration-300"
+                  className="relative p-2 sm:p-2.5 rounded-full bg-muted/10 hover:bg-muted/20 transition-all duration-300 group"
                   aria-expanded={isThemeMenuOpen}
                   aria-haspopup="true"
-                  aria-label="Open color theme picker"
-                  title="Pick color theme"
+                  aria-label="Open theme picker"
+                  title="Change theme"
                 >
-                  <span
-                    className="block w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-white/70 shadow-sm"
-                    style={{
-                      background: `linear-gradient(135deg, ${activeThemeOption?.colors?.primary || "#8B0000"} 0%, ${activeThemeOption?.colors?.secondary || "#B22222"} 100%)`,
-                    }}
-                  />
+                  <div className="relative">
+                    <Palette className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                    <span
+                      className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-card-bg"
+                      style={{
+                        background: "var(--primary)",
+                      }}
+                    />
+                  </div>
                 </button>
 
                 {isThemeMenuOpen && (
                   <div
                     ref={themeDropdownRef}
-                    className="absolute right-0 top-full mt-2 w-80 z-50 animate-dropdown"
+                    className="absolute right-0 top-full mt-2 z-50 animate-dropdown w-[38rem] max-w-[calc(100vw-2rem)] origin-top-right"
                   >
-                    <div className="p-3 bg-white dark:bg-black rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-900">
-                      <div className="flex items-center space-x-2 mb-3">
-                        <Palette className="w-4 h-4 text-[#8B0000] dark:text-[#B22222]" />
-                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Choose Theme Color</p>
+                    <div className="p-4 bg-card-bg rounded-2xl shadow-xl border border-border">
+                      <div className="flex items-center justify-between gap-3 mb-4 pb-2 border-b border-border">
+                        <div className="flex items-center space-x-2">
+                          <Palette className="w-5 h-5 text-primary" />
+                          <h3 className="text-lg font-semibold text-text">Theme Gallery</h3>
+                        </div>
+                        <span
+                          className="text-xs px-2 py-1 rounded-full text-white shrink-0"
+                          style={{ background: "var(--primary)" }}
+                        >
+                          {activeThemeOption?.name}
+                        </span>
                       </div>
-                      <div className="grid grid-cols-5 gap-2 max-h-56 overflow-y-auto pr-1">
+
+                      <div className="grid grid-cols-3 gap-3 p-4 max-h-[60vh] overflow-y-auto pr-1">
                         {themeOptions.map((option) => (
                           <button
                             key={option.key}
@@ -548,42 +914,90 @@ const Navbar = memo(() => {
                               setColorTheme(option.key);
                               setIsThemeMenuOpen(false);
                             }}
-                            className={`relative flex flex-col items-center justify-center p-1.5 rounded-xl transition-all duration-200 ${colorTheme === option.key
-                              ? "bg-[#8B0000]/10 dark:bg-[#B22222]/20"
-                              : "hover:bg-gray-100 dark:hover:bg-gray-900"
+                            className={`relative group text-left transition-all duration-200 rounded-xl p-3 ${colorTheme === option.key
+                                ? "ring-2 ring-primary shadow-lg"
+                                : "hover:bg-muted/10"
                               }`}
-                            title={option.name}
-                            aria-label={`Set color theme ${option.name}`}
+                            title={option.description}
+                            aria-label={`Set theme: ${option.name}`}
                           >
-                            <span
-                              className="w-8 h-8 rounded-full border border-white/80 shadow-sm"
+                            {/* Theme Preview Card */}
+                            <div className="space-y-2">
+                              {/* Color Palette Preview */}
+                              <div className="flex gap-1">
+                                <div
+                                  className="w-6 h-6 rounded-full shadow-sm"
+                                  style={{ backgroundColor: option.colors.primary }}
+                                />
+                                <div
+                                  className="w-6 h-6 rounded-full shadow-sm"
+                                  style={{ backgroundColor: option.colors.secondary }}
+                                />
+                                <div
+                                  className="w-6 h-6 rounded-full shadow-sm"
+                                  style={{ backgroundColor: option.colors.accent }}
+                                />
+                                <div
+                                  className="w-6 h-6 rounded-full shadow-sm"
+                                  style={{ backgroundColor: option.colors.text }}
+                                />
+                              </div>
+
+                              {/* Theme Name */}
+                              <div className="flex items-center justify-between">
+                                <span className={`text-sm font-semibold ${colorTheme === option.key ? 'text-primary' : 'text-text'
+                                  }`}>
+                                  {option.name}
+                                </span>
+                                {colorTheme === option.key && (
+                                  <Check className="w-4 h-4 text-primary" />
+                                )}
+                              </div>
+
+                              {/* Theme Description */}
+                              <p className="text-xs text-muted line-clamp-2">
+                                {option.description}
+                              </p>
+                            </div>
+
+                            {/* Hover Effect */}
+                            <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
                               style={{
-                                background: `linear-gradient(135deg, ${option.colors.primary} 0%, ${option.colors.secondary} 100%)`,
+                                boxShadow: `0 0 0 2px var(--primary), 0 0 0 4px var(--secondary)`,
+                                borderRadius: '0.75rem'
                               }}
                             />
-                            {colorTheme === option.key && (
-                              <Check className="absolute top-1 right-1 w-3.5 h-3.5 text-[#8B0000] dark:text-[#B22222]" />
-                            )}
                           </button>
                         ))}
+                      </div>
+
+                      {/* Current Theme Info */}
+                      <div className="mt-4 pt-3 border-t border-border">
+                        <div className="flex items-center justify-between text-xs text-muted">
+                          <span>Active Theme</span>
+                          <span className="font-mono">{activeThemeOption?.name}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Theme Toggle */}
+              {/* Mobile Theme Button */}
               <button
-                onClick={toggleTheme}
-                className="relative p-2.5 sm:p-3 rounded-full bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 transition-all duration-300 group"
-                aria-label="Toggle theme"
+                onClick={() => setIsMobileThemeOpen(true)}
+                className="relative lg:hidden p-2 rounded-full bg-muted/10 hover:bg-muted/20 transition-all duration-300 group"
+                aria-label="Open theme picker"
+                title="Change theme"
               >
-                <div className="relative z-10">
-                  {theme === "dark" ? (
-                    <Sun className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 group-hover:rotate-90 transition-transform duration-500" />
-                  ) : (
-                    <Moon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 group-hover:-rotate-12 transition-transform duration-500" />
-                  )}
+                <div className="relative">
+                  <Palette className="w-5 h-5 text-primary" />
+                  <span
+                    className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-card-bg"
+                    style={{
+                      background: "var(--primary)",
+                    }}
+                  />
                 </div>
               </button>
 
@@ -595,8 +1009,11 @@ const Navbar = memo(() => {
                     className="flex items-center space-x-3 group"
                   >
                     <div className="relative">
-                      <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-[#8B0000] to-[#B22222] p-0.5 shadow-md group-hover:shadow-lg transition-all duration-300">
-                        <div className="w-full h-full rounded-[10px] bg-white dark:bg-black overflow-hidden flex items-center justify-center">
+                      <div
+                        className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl p-0.5 shadow-md group-hover:shadow-lg transition-all duration-300"
+                        style={{ background: "var(--primary)" }}
+                      >
+                        <div className="w-full h-full rounded-[10px] bg-card-bg overflow-hidden flex items-center justify-center">
                           {session?.user?.image && !imageError ? (
                             <Image
                               src={session.user.image}
@@ -610,34 +1027,46 @@ const Navbar = memo(() => {
                               }}
                             />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-[#8B0000] to-[#B22222] flex items-center justify-center text-white text-lg font-bold">
+                            <div
+                              className="w-full h-full flex items-center justify-center text-white text-lg font-bold"
+                              style={{ background: "var(--primary)" }}
+                            >
                               {session?.user?.name?.[0]?.toUpperCase() || "S"}
                             </div>
                           )}
                         </div>
                       </div>
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gradient-to-r from-[#B22222] to-[#FF2400] rounded-full border-2 border-white dark:border-black"></div>
+                      <div
+                        className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-card-bg"
+                        style={{ background: "var(--secondary)" }}
+                      ></div>
                     </div>
                     <div className="hidden lg:block text-left">
-                      <p className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-[#8B0000] dark:group-hover:text-[#B22222] transition-colors">
+                      <p className="text-sm font-bold text-text group-hover:text-primary transition-colors">
                         {session?.user?.name || "Student"}
                       </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                      <p className="text-xs text-muted font-medium">
                         {session?.user?.provider === "google" ? "Google Login" : "Premium Student"}
                       </p>
                     </div>
                   </button>
 
-                  {/* User Dropdown Menu - Hidden on scroll */}
-                  {isUserMenuOpen && !hideMenuItems && (
+                  {/* User Dropdown Menu */}
+                  {isUserMenuOpen && (
                     <div className="absolute right-0 top-full mt-4 w-80 origin-top-right animate-dropdown z-50">
-                      <div className="p-3 bg-white dark:bg-black rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-900">
+                      <div className="p-3 bg-card-bg rounded-3xl shadow-xl border border-border">
 
-                        {/* User Info with Ancient Red */}
-                        <div className="p-4 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-black rounded-2xl mb-2 border border-gray-200 dark:border-gray-900">
+                        {/* User Info */}
+                        <div
+                          className="p-4 rounded-2xl mb-2 border border-border"
+                          style={{ background: 'var(--background)' }}
+                        >
                           <div className="flex items-center space-x-4 mb-4">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#8B0000] to-[#B22222] p-0.5">
-                              <div className="w-full h-full rounded-[14px] bg-white dark:bg-black overflow-hidden flex items-center justify-center">
+                            <div
+                              className="w-14 h-14 rounded-2xl p-0.5"
+                              style={{ background: "var(--primary)" }}
+                            >
+                              <div className="w-full h-full rounded-[14px] bg-card-bg overflow-hidden flex items-center justify-center">
                                 {session?.user?.image && !imageError ? (
                                   <Image
                                     src={session.user.image}
@@ -654,26 +1083,32 @@ const Navbar = memo(() => {
                                     }}
                                   />
                                 ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-[#8B0000] to-[#B22222] flex items-center justify-center text-white text-2xl font-bold">
+                                  <div
+                                    className="w-full h-full flex items-center justify-center text-white text-2xl font-bold"
+                                    style={{ background: "var(--primary)" }}
+                                  >
                                     {session?.user?.name?.[0]?.toUpperCase() || "S"}
                                   </div>
                                 )}
                               </div>
                             </div>
                             <div>
-                              <p className="font-bold text-lg text-gray-900 dark:text-white">
+                              <p className="font-bold text-lg text-text">
                                 {session?.user?.name || "Student"}
                               </p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                              <p className="text-sm text-muted font-medium">
                                 {session?.user?.email}
                               </p>
                             </div>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="px-3 py-1 text-xs font-bold bg-gradient-to-r from-[#8B0000] to-[#B22222] text-white rounded-full">
+                            <span
+                              className="px-3 py-1 text-xs font-bold text-white rounded-full"
+                              style={{ background: "var(--primary)" }}
+                            >
                               Premium Member
                             </span>
-                            <Star className="w-4 h-4 text-amber-500" />
+                            <Star className="w-4 h-4 text-warning" />
                           </div>
                         </div>
 
@@ -682,27 +1117,25 @@ const Navbar = memo(() => {
                           <Link
                             href="/myProfile"
                             onClick={() => setIsUserMenuOpen(false)}
-                            className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-200 group"
+                            className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-muted/10 transition-all duration-200 group"
                           >
                             <div className="flex items-center space-x-3">
-                              <div className="p-2 rounded-lg bg-gradient-to-br from-[#8B0000]/10 to-[#B22222]/10 text-[#8B0000] dark:text-[#B22222] group-hover:from-[#8B0000]/20 group-hover:to-[#B22222]/20 transition-colors">
+                              <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
                                 <User className="w-5 h-5" />
                               </div>
-                              <span className="font-semibold text-gray-800 dark:text-gray-300">My Profile</span>
+                              <span className="font-semibold text-text">My Profile</span>
                             </div>
-                            <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
+                            <ChevronRight className="w-4 h-4 text-muted" />
                           </Link>
-
-
 
                           <button
                             onClick={handleLogout}
-                            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-[#8B0000]/5 hover:to-[#B22222]/5 dark:hover:from-[#8B0000]/10 dark:hover:to-[#B22222]/10 transition-all duration-200 group"
+                            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-primary/5 transition-all duration-200 group"
                           >
-                            <div className="p-2 rounded-lg bg-gradient-to-br from-[#8B0000]/10 to-[#B22222]/10 text-[#8B0000] dark:text-[#B22222] group-hover:from-[#8B0000]/20 group-hover:to-[#B22222]/20 transition-colors">
+                            <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
                               <LogOut className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </div>
-                            <span className="font-semibold text-[#8B0000] dark:text-[#B22222]">Logout</span>
+                            <span className="font-semibold text-primary">Logout</span>
                           </button>
                         </div>
                       </div>
@@ -712,7 +1145,11 @@ const Navbar = memo(() => {
               ) : (
                 <button
                   onClick={() => setIsLoginOpen(true)}
-                  className="hidden sm:flex items-center space-x-2 px-6 py-2.5 bg-gradient-to-r from-[#8B0000] to-[#B22222] hover:from-[#660000] hover:to-[#8B0000] text-white font-bold rounded-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:shadow-lg hover:shadow-red-900/30 active:translate-y-0"
+                  className="hidden sm:flex items-center space-x-2 px-6 py-2.5 text-white font-bold rounded-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
+                  style={{
+                    background: "var(--primary)",
+                    boxShadow: '0 4px 6px -1px var(--shadow)'
+                  }}
                 >
                   <LogIn className="w-4 h-4" />
                   <span>Login</span>
@@ -721,28 +1158,25 @@ const Navbar = memo(() => {
 
               {/* Mobile Menu Button */}
               <button
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => {
+                  setIsOpen((prev) => !prev);
+                }}
                 aria-label="Toggle menu"
                 aria-expanded={isOpen}
                 className="lg:hidden relative w-10 h-10 flex items-center justify-center"
               >
-                <div className="relative w-6 h-6">
-                  <span className={`absolute h-0.5 bg-gradient-to-r from-[#8B0000] to-[#B22222] rounded-full transition-all duration-300 ${isOpen ? 'top-3 w-0 left-1/2' : 'top-1 w-6 left-0'
-                    }`}></span>
-                  <span className={`absolute top-3 h-0.5 bg-gradient-to-r from-[#8B0000] to-[#B22222] rounded-full transition-all duration-300 ${isOpen ? 'rotate-45 w-6' : 'w-6'
-                    }`}></span>
-                  <span className={`absolute top-3 h-0.5 bg-gradient-to-r from-[#8B0000] to-[#B22222] rounded-full transition-all duration-300 ${isOpen ? '-rotate-45 w-6' : 'w-6'
-                    }`}></span>
-                  <span className={`absolute h-0.5 bg-gradient-to-r from-[#8B0000] to-[#B22222] rounded-full transition-all duration-300 ${isOpen ? 'top-3 w-0 left-1/2' : 'top-5 w-6 left-0'
-                    }`}></span>
-                </div>
+                {isOpen ? (
+                  <X className="w-6 h-6 text-primary" />
+                ) : (
+                  <Menu className="w-6 h-6 text-primary" />
+                )}
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Bottom Sheet with Swipe Gesture */}
+      {/* Enhanced Mobile Bottom Sheet with Swipe Gesture */}
       {isOpen && (
         <div className="fixed inset-0 z-[99] lg:hidden">
           {/* Backdrop with fade effect */}
@@ -754,8 +1188,11 @@ const Navbar = memo(() => {
 
           {/* Bottom Sheet with swipe gesture */}
           <div
-            ref={sheetRef}
-            className="absolute bottom-0 left-0 right-0 h-[85vh] bg-white dark:bg-black rounded-t-3xl shadow-2xl animate-slideUp"
+            ref={(element) => {
+              sheetRef.current = element;
+              mobileMenuRef.current = element;
+            }}
+            className="absolute bottom-0 left-0 right-0 h-[90vh] bg-card-bg rounded-t-3xl shadow-2xl animate-slideUp overflow-hidden flex flex-col"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -765,215 +1202,261 @@ const Navbar = memo(() => {
               className="flex justify-center pt-3 pb-2 cursor-pointer active:cursor-grabbing"
               onClick={() => setIsOpen(false)}
             >
-              <div className="w-12 h-1.5 bg-gradient-to-r from-[#8B0000] to-[#B22222] rounded-full"></div>
+              <div
+                className="w-12 h-1.5 rounded-full"
+                style={{ background: "var(--primary)" }}
+              ></div>
             </div>
 
-            {/* User Profile Section */}
-            <div className="px-6 pt-4 pb-6">
-              {isLoggedIn ? (
-                <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-[#8B0000]/5 to-[#B22222]/5 dark:from-[#8B0000]/10 dark:to-[#B22222]/10 rounded-2xl mb-6 border border-[#8B0000]/10 dark:border-[#8B0000]/20">
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#8B0000] to-[#B22222] p-0.5">
-                      <div className="w-full h-full rounded-xl bg-white dark:bg-black overflow-hidden flex items-center justify-center">
-                        {session?.user?.image && !imageError ? (
-                          <Image
-                            src={session.user.image}
-                            alt={session.user.name || "Profile"}
-                            width={56}
-                            height={56}
-                            className="object-cover"
-                            onError={(e) => {
-                              console.error("Image load error:", session.user.image);
-                              setImageError(true);
-                            }}
-                            onLoad={() => {
-                              if (imageError) setImageError(false);
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-[#8B0000] to-[#B22222] flex items-center justify-center text-white text-2xl font-bold">
-                            {session?.user?.name?.[0]?.toUpperCase() || "S"}
-                          </div>
-                        )}
+            <div className="flex-1 overflow-y-auto px-6">
+              {/* User Profile Section */}
+              <div className="pt-4 pb-6">
+                {isLoggedIn ? (
+                  <div
+                    className="flex items-center space-x-4 p-4 rounded-2xl mb-6 border border-border animate-fadeIn"
+                    style={{ background: 'var(--background)' }}
+                  >
+                    <div className="relative">
+                      <div
+                        className="w-14 h-14 rounded-2xl p-0.5"
+                        style={{ background: "var(--primary)" }}
+                      >
+                        <div className="w-full h-full rounded-xl bg-card-bg overflow-hidden flex items-center justify-center">
+                          {session?.user?.image && !imageError ? (
+                            <Image
+                              src={session.user.image}
+                              alt={session.user.name || "Profile"}
+                              width={56}
+                              height={56}
+                              className="object-cover"
+                              onError={(e) => {
+                                console.error("Image load error:", session.user.image);
+                                setImageError(true);
+                              }}
+                              onLoad={() => {
+                                if (imageError) setImageError(false);
+                              }}
+                            />
+                          ) : (
+                            <div
+                              className="w-full h-full flex items-center justify-center text-white text-2xl font-bold"
+                              style={{ background: "var(--primary)" }}
+                            >
+                              {session?.user?.name?.[0]?.toUpperCase() || "S"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div
+                        className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-card-bg flex items-center justify-center"
+                        style={{ background: "var(--secondary)" }}
+                      >
+                        <Star className="w-2.5 h-2.5 text-white" />
                       </div>
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-r from-[#B22222] to-[#FF2400] rounded-full border-2 border-white dark:border-black flex items-center justify-center">
-                      <Star className="w-2.5 h-2.5 text-white" />
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg text-text">
+                        {session?.user?.name || "Student"}
+                      </h3>
+                      <p className="text-sm text-muted mb-2">
+                        {session?.user?.email}
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <span
+                          className="text-xs px-2 py-1 rounded-full text-white"
+                          style={{ background: "var(--primary)" }}
+                        >
+                          Premium Member
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">
-                      {session?.user?.name || "Student"}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      {session?.user?.email}
-                    </p>
+                ) : (
+                  <div
+                    className="p-4 rounded-2xl mb-6 border border-border animate-fadeIn"
+                    style={{ background: 'var(--background)' }}
+                  >
+                    <h3 className="font-bold text-lg text-text mb-2">Welcome to Job App! 🚀</h3>
+                    <p className="text-sm text-muted mb-4">Access job opportunities, resources & career growth</p>
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => {
+                          setIsLoginOpen(true);
+                          setIsOpen(false);
+                        }}
+                        className="flex-1 py-3 text-white font-semibold rounded-xl shadow-lg active:scale-95 transition-transform duration-200"
+                        style={{
+                          background: "var(--primary)",
+                          boxShadow: '0 10px 15px -3px var(--shadow)'
+                        }}
+                      >
+                        Login
+                      </button>
+                      <button
+                        onClick={() => {
+                          setRegisterCallbackUrl('/register');
+                          setIsRegisterOpen(true);
+                          setIsOpen(false);
+                        }}
+                        className="flex-1 py-3 text-primary font-semibold rounded-xl border-2 border-primary/30 active:scale-95 transition-transform duration-200"
+                      >
+                        Sign Up
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick Actions Grid */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-muted mb-3 flex items-center">
+                    <Zap className="w-4 h-4 mr-2 text-primary" />
+                    Quick Actions
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {quickActions.map((action) => {
+                      if (action.requiresAuth && !isLoggedIn) return null;
+                      return (
+                        <Link
+                          key={action.name}
+                          href={action.href}
+                          onClick={() => setIsOpen(false)}
+                          className="flex flex-col items-center p-3 bg-card-bg rounded-xl hover:shadow-lg transition-all duration-300 active:scale-95 border border-border group"
+                        >
+                          <div className={`p-2 rounded-lg mb-2 transition-colors group-hover:bg-primary/20`}>
+                            <action.icon
+                              className="w-5 h-5"
+                              style={{ color: quickActionIconColors[action.color] || "var(--primary)" }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-text text-center">{action.name}</span>
+                        </Link>
+                      );
+                    })}
                   </div>
                 </div>
-              ) : (
-                <div className="p-4 bg-gradient-to-r from-[#8B0000]/5 to-[#B22222]/5 dark:from-[#8B0000]/10 dark:to-[#B22222]/10 rounded-2xl mb-6 border border-[#8B0000]/10 dark:border-[#8B0000]/20">
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">Join Our Community</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Access job opportunities, resources & career growth</p>
-                  <button
-                    onClick={() => {
-                      setIsLoginOpen(true);
-                      setIsOpen(false);
-                    }}
-                    className="w-full py-3 bg-gradient-to-r from-[#8B0000] to-[#B22222] text-white font-semibold rounded-xl shadow-lg shadow-red-900/30 active:scale-95 transition-transform duration-200"
-                  >
-                    Login / Sign Up Free
-                  </button>
-                </div>
-              )}
 
-              {/* Quick Actions */}
-              <div className="grid grid-cols-3 gap-3 mb-6">
-                <Link
-                  href="/myProfile"
-                  onClick={() => setIsOpen(false)}
-                  className="flex flex-col items-center p-3 bg-white dark:bg-gray-900 rounded-xl hover:shadow-lg transition-all duration-300 active:scale-95 border border-gray-200 dark:border-gray-900"
-                >
-                  <User className="w-5 h-5 text-[#8B0000] dark:text-[#B22222] mb-1" />
-                  <span className="text-xs font-medium text-gray-800 dark:text-gray-300">Profile</span>
-                </Link>
-                <button
-                  onClick={toggleTheme}
-                  className="flex flex-col items-center p-3 bg-white dark:bg-gray-900 rounded-xl hover:shadow-lg transition-all duration-300 active:scale-95 border border-gray-200 dark:border-gray-900"
-                >
-                  {theme === 'dark' ? (
-                    <Sun className="w-5 h-5 text-amber-500 mb-1" />
-                  ) : (
-                    <Moon className="w-5 h-5 text-gray-700 mb-1" />
-                  )}
-                  <span className="text-xs font-medium text-gray-800 dark:text-gray-300">Theme</span>
-                </button>
-                <button
-                  onClick={() => setIsThemeMenuOpen((prev) => !prev)}
-                  className="flex flex-col items-center p-3 bg-white dark:bg-gray-900 rounded-xl hover:shadow-lg transition-all duration-300 active:scale-95 border border-gray-200 dark:border-gray-900"
-                >
-                  <span
-                    className="w-5 h-5 rounded-full border border-white/80 mb-1"
-                    style={{
-                      background: `linear-gradient(135deg, ${activeThemeOption?.colors?.primary || "#8B0000"} 0%, ${activeThemeOption?.colors?.secondary || "#B22222"} 100%)`,
-                    }}
-                  />
-                  <span className="text-xs font-medium text-gray-800 dark:text-gray-300">Colors</span>
-                </button>
-              </div>
-
-              {isThemeMenuOpen && (
-                <div className="mb-6 p-3 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-900">
-                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Pick a color bubble theme</p>
-                  <div className="grid grid-cols-6 gap-2 max-h-36 overflow-y-auto pr-1">
-                    {themeOptions.map((option) => (
+                {/* Category Tabs */}
+                <div className="mb-6">
+                  <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
+                    {Object.entries(menuCategories).map(([key, category]) => (
                       <button
-                        key={`mobile-${option.key}`}
-                        type="button"
-                        onClick={() => setColorTheme(option.key)}
-                        className={`relative p-1 rounded-lg transition-colors ${colorTheme === option.key
-                          ? "bg-[#8B0000]/10 dark:bg-[#B22222]/20"
-                          : "hover:bg-gray-100 dark:hover:bg-black"
+                        key={key}
+                        onClick={() => setActiveCategory(key)}
+                        className={`px-4 py-2 rounded-xl whitespace-nowrap transition-all duration-200 ${activeCategory === key
+                            ? 'bg-primary text-white shadow-lg'
+                            : 'bg-muted/10 text-text hover:bg-muted/20'
                           }`}
-                        title={option.name}
-                        aria-label={`Set color theme ${option.name}`}
                       >
-                        <span
-                          className="block w-8 h-8 rounded-full border border-white/80"
-                          style={{
-                            background: `linear-gradient(135deg, ${option.colors.primary} 0%, ${option.colors.secondary} 100%)`,
-                          }}
-                        />
-                        {colorTheme === option.key && (
-                          <Check className="absolute -top-1 -right-1 w-3.5 h-3.5 text-[#8B0000] dark:text-[#B22222]" />
-                        )}
+                        <div className="flex items-center space-x-2">
+                          <category.icon className="w-4 h-4" />
+                          <span className="text-sm font-medium">{category.title}</span>
+                        </div>
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* Navigation Links */}
-              <div className="space-y-1 max-h-[45vh] overflow-y-auto pr-2">
-                {navLinks.map((link, index) => {
-                  const Icon = link.icon;
+                {/* Navigation Links */}
+                <div className="space-y-2 pb-20">
+                  {filteredLinks.map((link, index) => {
+                    const Icon = link.icon;
+                    const isActive = pathname === link.href;
 
-                  if (link.name === 'Register' && !isLoggedIn) {
+                    if (link.name === 'Register' && !isLoggedIn) {
+                      return (
+                        <button
+                          key={link.name}
+                          onClick={() => {
+                            setIsOpen(false);
+                            setLoginCallbackUrl('/register');
+                            setIsLoginOpen(true);
+                          }}
+                          className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-muted/10 transition-all duration-300 group active:scale-[0.98] border border-transparent hover:border-border animate-fadeIn"
+                          style={{ animationDelay: `${index * 50}ms` }}
+                        >
+                          <div className="flex items-center space-x-4">
+                            <div className={`p-2 rounded-lg ${isActive ? 'bg-primary' : 'bg-muted/10'}`}>
+                              <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-muted'}`} />
+                            </div>
+                            <span className={`font-medium ${isActive ? 'text-primary' : 'text-text'}`}>
+                              {link.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {link.badge && (
+                              <span
+                                className="px-2 py-1 text-xs font-bold text-white rounded-full"
+                                style={{ background: "var(--primary)" }}
+                              >
+                                {link.badge}
+                              </span>
+                            )}
+                            <ChevronRight className="w-4 h-4 text-muted group-hover:translate-x-1 transition-transform" />
+                          </div>
+                        </button>
+                      );
+                    }
+
                     return (
-                      <button
+                      <Link
                         key={link.name}
-                        onClick={() => {
-                          setIsOpen(false);
-                          setLoginCallbackUrl('/register');
-                          setIsLoginOpen(true);
-                        }}
-                        className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-300 group active:scale-[0.98] border border-transparent hover:border-[#8B0000]/10"
+                        href={link.href}
+                        onClick={() => setIsOpen(false)}
+                        className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-muted/10 transition-all duration-300 group active:scale-[0.98] border border-transparent hover:border-border animate-fadeIn"
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         <div className="flex items-center space-x-4">
-                          <div className={`p-2 rounded-lg bg-gradient-to-br ${pathname === link.href
-                            ? 'from-[#8B0000] to-[#B22222]'
-                            : 'from-gray-100 to-gray-50 dark:from-gray-900 dark:to-black'
-                            }`}>
-                            <Icon className={`w-5 h-5 ${pathname === link.href
-                              ? 'text-white'
-                              : 'text-gray-600 dark:text-gray-400'
-                              }`} />
+                          <div className={`p-2 rounded-lg ${isActive ? 'bg-primary' : 'bg-muted/10'}`}>
+                            <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-muted'}`} />
                           </div>
-                          <span className={`font-medium ${pathname === link.href
-                            ? 'text-[#8B0000] dark:text-[#B22222]'
-                            : 'text-gray-800 dark:text-gray-300'
-                            }`}>
+                          <span className={`font-medium ${isActive ? 'text-primary' : 'text-text'}`}>
                             {link.name}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
                           {link.badge && (
-                            <span className="px-2 py-1 text-xs font-bold bg-gradient-to-r from-[#8B0000] to-[#B22222] text-white rounded-full">
+                            <span
+                              className="px-2 py-1 text-xs font-bold text-white rounded-full"
+                              style={{ background: "var(--primary)" }}
+                            >
                               {link.badge}
                             </span>
                           )}
-                          <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
+                          <ChevronRight className="w-4 h-4 text-muted group-hover:translate-x-1 transition-transform" />
                         </div>
-                      </button>
+                      </Link>
                     );
-                  }
+                  })}
+                </div>
+              </div>
+            </div>
 
-                  return (
-                    <Link
-                      key={link.name}
-                      href={link.href}
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center justify-between p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-300 group active:scale-[0.98] border border-transparent hover:border-[#8B0000]/10"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className={`p-2 rounded-lg bg-gradient-to-br ${pathname === link.href
-                          ? 'from-[#8B0000] to-[#B22222]'
-                          : 'from-gray-100 to-gray-50 dark:from-gray-900 dark:to-black'
-                          }`}>
-                          <Icon className={`w-5 h-5 ${pathname === link.href
-                            ? 'text-white'
-                            : 'text-gray-600 dark:text-gray-400'
-                            }`} />
-                        </div>
-                        <span className={`font-medium ${pathname === link.href
-                          ? 'text-[#8B0000] dark:text-[#B22222]'
-                          : 'text-gray-800 dark:text-gray-300'
-                          }`}>
-                          {link.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {link.badge && (
-                          <span className="px-2 py-1 text-xs font-bold bg-gradient-to-r from-[#8B0000] to-[#B22222] text-white rounded-full">
-                            {link.badge}
-                          </span>
-                        )}
-                        <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
-                      </div>
-                    </Link>
-                  );
-                })}
+            {/* Bottom Actions */}
+            <div className="border-t border-border p-4 bg-card-bg">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center justify-between sm:justify-start sm:space-x-4">
+                  <button
+                    onClick={() => {
+                      setIsMobileThemeOpen(true);
+                      setIsOpen(false);
+                    }}
+                    className="flex items-center space-x-2 text-sm text-muted hover:text-primary transition-colors"
+                  >
+                    <Palette className="w-4 h-4" />
+                    <span>Theme</span>
+                  </button>
+                </div>
+                {!isLoggedIn && (
+                  <button
+                    onClick={() => {
+                      setIsLoginOpen(true);
+                      setIsOpen(false);
+                    }}
+                    className="text-sm text-primary font-medium text-left sm:text-right"
+                  >
+                    Sign in for more →
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -985,19 +1468,10 @@ const Navbar = memo(() => {
 
       {/* Global Styles */}
       <style jsx global>{`
-        /* Set pitch black and pure white theme */
-        :root {
-          --ancient-red: #8B0000;
-          --ancient-red-light: #B22222;
-          --ancient-red-dark: #660000;
-        }
-        
-        .dark {
-          background-color: #000000 !important;
-        }
-        
-        .light {
-          background-color: #ffffff !important;
+        body {
+          background-color: var(--background);
+          color: var(--text);
+          transition: background-color 0.3s ease, color 0.3s ease;
         }
         
         /* Remove default focus outline */
@@ -1012,8 +1486,8 @@ const Navbar = memo(() => {
         
         /* Animations */
         @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         
         @keyframes slideDown {
@@ -1047,15 +1521,6 @@ const Navbar = memo(() => {
           }
         }
         
-        @keyframes pulse-red {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.7;
-          }
-        }
-        
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-out forwards;
         }
@@ -1072,19 +1537,20 @@ const Navbar = memo(() => {
           animation: dropdown 0.2s ease-out forwards;
         }
         
-        .animate-pulse-red {
-          animation: pulse-red 2s ease-in-out infinite;
+        /* Hide scrollbar but keep functionality */
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
         
-        /* Theme transition */
-        .theme-transition * {
-          transition: background-color 0.3s ease, border-color 0.3s ease !important;
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
         }
         
         /* Smooth scrollbar */
         .overflow-y-auto {
           scrollbar-width: thin;
-          scrollbar-color: rgba(139, 0, 0, 0.5) transparent;
+          scrollbar-color: var(--primary) transparent;
         }
         
         .overflow-y-auto::-webkit-scrollbar {
@@ -1096,24 +1562,24 @@ const Navbar = memo(() => {
         }
         
         .overflow-y-auto::-webkit-scrollbar-thumb {
-          background: linear-gradient(to bottom, #8B0000, #B22222);
+          background: var(--primary);
           border-radius: 3px;
         }
         
-        /* Enhanced selection with ancient red */
+        /* Enhanced selection with theme primary color */
         ::selection {
-          background-color: rgba(139, 0, 0, 0.3);
-          color: inherit;
+          background-color: var(--primary);
+          color: white;
         }
         
         /* Smooth transitions */
         * {
-          transition: background-color 0.2s ease, border-color 0.2s ease;
+          transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
         }
         
-        /* Better focus styles with ancient red */
+        /* Better focus styles with theme primary color */
         button:focus-visible, a:focus-visible {
-          outline: 2px solid #8B0000;
+          outline: 2px solid var(--primary);
           outline-offset: 2px;
           border-radius: 0.375rem;
         }
@@ -1123,21 +1589,54 @@ const Navbar = memo(() => {
           cursor: grabbing;
         }
         
-        /* Ancient red glow effects */
-        .glow-red {
-          box-shadow: 0 0 20px rgba(139, 0, 0, 0.3);
+        /* Line clamp utility */
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
         
-        .hover-glow-red:hover {
-          box-shadow: 0 0 25px rgba(139, 0, 0, 0.4);
+        /* Prevent body scroll when menu is open */
+        body.menu-open {
+          overflow: hidden;
         }
         
-        /* Gradient text for ancient red */
-        .text-gradient-ancient-red {
-          background: linear-gradient(135deg, #8B0000 0%, #B22222 50%, #FF2400 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
+        /* Touch feedback */
+        .active\\:scale-\\[0\\.98\\]:active {
+          transform: scale(0.98);
+        }
+
+        /* Mobile-specific touch improvements */
+        @media (max-width: 1024px) {
+          button, 
+          [role="button"],
+          a {
+            min-height: 44px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+          }
+          
+          .touch-feedback:active {
+            transform: scale(0.97);
+            transition: transform 0.1s ease;
+          }
+        }
+        
+        /* Scroll snap for categories */
+        .scroll-snap-x {
+          scroll-snap-type: x mandatory;
+          -webkit-overflow-scrolling: touch;
+        }
+        
+        .scroll-snap-start {
+          scroll-snap-align: start;
+        }
+        
+        /* Prevent text selection during swipe */
+        .no-select {
+          user-select: none;
+          -webkit-tap-highlight-color: transparent;
         }
       `}</style>
     </>
