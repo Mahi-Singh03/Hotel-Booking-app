@@ -1,6 +1,6 @@
-import connectDB from "@/lib/DBconnection";
-import User from "@/models/user";
-import Applicant from "@/models/applicant";
+import connectDB from "@/src/lib/DBconnection";
+import User from "@/src/models/";
+import Applicant from "@/src/models/applicant";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 

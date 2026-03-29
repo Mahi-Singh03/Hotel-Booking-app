@@ -1,9 +1,9 @@
 import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
 import CredentialsProvider from "next-auth/providers/credentials";
-import connectDB from "@/lib/DBconnection";
-import User from "@/models/user";
-import Applicant from "@/models/applicant";
+import connectDB from "@/src/lib/DBconnection";
+import User from "@/src/models/user";
+// import Applicant from "@/models/applicant";
 import bcrypt from "bcryptjs";
 
 // Auto-set NEXTAUTH_URL for local development

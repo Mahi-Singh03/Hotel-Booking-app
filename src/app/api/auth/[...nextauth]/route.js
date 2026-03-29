@@ -1,5 +1,5 @@
 import NextAuth from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/src/lib/auth";
 
 // Validate required environment variables
 if (!process.env.NEXTAUTH_SECRET) {
