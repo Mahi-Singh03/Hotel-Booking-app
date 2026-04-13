@@ -57,7 +57,7 @@ import {
 // Main navigation links (visible on desktop without "More")
 const mainNavLinks = [
   { name: "Home", href: "/", icon: Home, badge: null, category: "main" },
-  { name: "Code Space", href: "/jobs", icon: FaCode, badge: null, category: "main" },
+  { name: "Code Space", href: "/code-space", icon: FaCode, badge: null, category: "main" },
   { name: "Notes", href: "/sucessStories", icon: GrDocumentNotes, badge: "New", category: "main" },
   { name: "Collaborate", href: "/teams", icon: AiOutlineTeam, badge: null, category: "main" },
   { name: "Help", href: "/help", icon: IoIosHelpBuoy, badge: null, category: "main" },
