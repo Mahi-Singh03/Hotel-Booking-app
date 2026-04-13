@@ -9,11 +9,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "@/src/app/context/ThemeContext";
 import LoginModal from "../auth/LoginModal";
 import RegisterModal from "../auth/RegisterModal";
+import { FaLaptopCode } from "react-icons/fa";
+import { FaCode } from "react-icons/fa";
+import { GrDocumentNotes } from "react-icons/gr";
+import { AiOutlineTeam } from "react-icons/ai";
+import { IoIosHelpBuoy } from "react-icons/io";
 import {
   Home,
-  BriefcaseBusiness,
   UserRoundPlus,
-  Trophy,
   FolderKanban,
   Images,
   HelpCircle,
@@ -24,7 +27,6 @@ import {
   LogOut,
   LogIn,
   ChevronDown,
-  Sparkles,
   User,
   Settings,
   Bell,
@@ -52,22 +54,29 @@ import {
   Info,
 } from "lucide-react";
 
-const navLinks = [
+// Main navigation links (visible on desktop without "More")
+const mainNavLinks = [
   { name: "Home", href: "/", icon: Home, badge: null, category: "main" },
-  { name: "Find Job", href: "/jobs", icon: BriefcaseBusiness, badge: "Hot", category: "main" },
-  { name: "Success Stories", href: "/sucessStories", icon: Trophy, badge: "New", category: "main" },
-  { name: "Interview Prep", href: "/interview-prep", icon: FolderKanban, badge: null, category: "resources" },
-  { name: "Resources", href: "/resources", icon: FileText, badge: null, category: "resources" },
-  { name: "Gallery", href: "/gallery", icon: Images, badge: null, category: "resources" },
+  { name: "Code Space", href: "/jobs", icon: FaCode, badge: null, category: "main" },
+  { name: "Notes", href: "/sucessStories", icon: GrDocumentNotes, badge: "New", category: "main" },
+  { name: "Collaborate", href: "/teams", icon: AiOutlineTeam, badge: null, category: "main" },
+  { name: "Help", href: "/help", icon: IoIosHelpBuoy, badge: null, category: "main" },
+];
+
+// Secondary navigation links (shown in "More" dropdown on desktop)
+const secondaryNavLinks = [
   { name: "About", href: "/about", icon: Users, badge: null, category: "info" },
   { name: "Contact", href: "/contact", icon: Mail, badge: null, category: "info" },
   { name: "Privacy Policies", href: "/privacy-policies", icon: Shield, badge: null, category: "info" },
 ];
 
+// All nav links combined for mobile
+const allNavLinks = [...mainNavLinks, ...secondaryNavLinks];
+
 // Quick action items for mobile
 const quickActions = [
-  { name: "Search Jobs", icon: Search, href: "/jobs", color: "primary" },
-  { name: "Saved Jobs", icon: Bookmark, href: "/saved-jobs", color: "secondary", requiresAuth: true },
+  { name: "Notes", icon: GrDocumentNotes, href: "/jobs", color: "primary", requiresAuth: true},
+  { name: "About", icon: Bookmark, href: "/about  ", color: "secondary", requiresAuth: false },
   { name: "Notifications", icon: Bell, href: "/notifications", color: "accent", requiresAuth: true },
   { name: "Help Center", icon: HelpCircle, href: "/help", color: "muted" },
 ];
@@ -81,18 +90,18 @@ const quickActionIconColors = {
 
 // Categories for mobile menu organization
 const menuCategories = {
-  main: { title: "Main Navigation", icon: Home },
-  resources: { title: "Resources & Tools", icon: BookOpen },
-  info: { title: "Information", icon: Info },
+  all: { title: "All", icon: Home },
+  main: { title: "Main", icon: Home },
+  info: { title: "Info", icon: Info },
 };
 
 // Theme categories for mobile
 const themeCategories = {
   all: { name: "All Themes", icon: Palette, color: "var(--primary)" },
-  vibrant: { name: "Vibrant", icon: Sparkles, color: "#FF6B6B" },
+  vibrant: { name: "Vibrant", icon: FaLaptopCode, color: "#FF6B6B" },
   dark: { name: "Dark", icon: Moon, color: "#4A5568" },
   light: { name: "Light", icon: Sun, color: "#FBBF24" },
-  professional: { name: "Professional", icon: BriefcaseBusiness, color: "#3B82F6" },
+  professional: { name: "Professional", icon: FaCode, color: "#3B82F6" },
   creative: { name: "Creative", icon: Palette, color: "#EC4899" }
 };
 
@@ -197,7 +206,6 @@ const MobileThemeSelector = memo(({ isOpen, onClose, activeThemeOption, themeOpt
             </div>
           </div>
         </div>
-
 
         {/* Theme Grid */}
         <div className="flex-1 overflow-y-auto px-5 py-3 pb-6">
@@ -359,18 +367,32 @@ const MobileThemeSelector = memo(({ isOpen, onClose, activeThemeOption, themeOpt
 
 MobileThemeSelector.displayName = 'MobileThemeSelector';
 
-// Memoized Nav Links Component
-const NavLinks = memo(({ isOpen, pathname }) => (
+// Memoized Nav Links Component for Desktop
+const DesktopNavLinks = memo(({ pathname }) => (
   <>
-    {navLinks.map((link) => {
+    {mainNavLinks.map((link) => {
       const Icon = link.icon;
       const isActive = pathname === link.href;
       return (
-        <Link key={link.name} href={link.href}>
-          <span className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive ? 'bg-primary/10 text-primary' : 'text-text hover:bg-muted/10'}`}>
-            <Icon className="w-4 h-4" />
-            {link.name}
-            {link.badge && <span className="ml-2 text-xs bg-primary text-white px-2 py-0.5 rounded-full">{link.badge}</span>}
+        <Link
+          key={link.name}
+          href={link.href}
+          className={`relative px-4 py-2 rounded-xl transition-all duration-300 group whitespace-nowrap ${isActive
+            ? 'bg-primary/10 text-primary border border-primary/20'
+            : 'text-text hover:text-primary hover:bg-muted/10'
+          }`}
+        >
+          <span className="flex items-center space-x-2 text-sm font-semibold">
+            <Icon className={`w-4 h-4 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+            <span>{link.name}</span>
+            {link.badge && (
+              <span
+                className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 text-[10px] font-bold text-white rounded-full shadow-sm"
+                style={{ background: "var(--primary)" }}
+              >
+                {link.badge}
+              </span>
+            )}
           </span>
         </Link>
       );
@@ -378,7 +400,7 @@ const NavLinks = memo(({ isOpen, pathname }) => (
   </>
 ));
 
-NavLinks.displayName = 'NavLinks';
+DesktopNavLinks.displayName = 'DesktopNavLinks';
 
 const Navbar = memo(() => {
   const { data: session, status } = useSession();
@@ -408,7 +430,7 @@ const Navbar = memo(() => {
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [isMobileThemeOpen, setIsMobileThemeOpen] = useState(false);
   const [touchStartTime, setTouchStartTime] = useState(0);
-  const [activeCategory, setActiveCategory] = useState("main");
+  const [activeCategory, setActiveCategory] = useState("all");
 
   const mobileMenuRef = useRef(null);
   const sheetRef = useRef(null);
@@ -427,13 +449,12 @@ const Navbar = memo(() => {
     [themeOptions, colorTheme]
   );
 
-  // Filtered links based on category
+  // Filtered links based on category for mobile
   const filteredLinks = useMemo(() => {
-    let links = navLinks;
-    if (activeCategory !== "all") {
-      links = links.filter(link => link.category === activeCategory);
+    if (activeCategory === "all") {
+      return allNavLinks;
     }
-    return links;
+    return allNavLinks.filter(link => link.category === activeCategory);
   }, [activeCategory]);
 
   // Reset image error when session or image URL changes
@@ -730,7 +751,7 @@ const Navbar = memo(() => {
                     boxShadow: '0 10px 15px -3px var(--shadow)'
                   }}
                 >
-                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  <FaLaptopCode className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div
                   className="absolute -top-1 -right-1 w-4 h-4 rounded-full animate-ping opacity-75"
@@ -742,62 +763,16 @@ const Navbar = memo(() => {
                   className="text-lg sm:text-3xl font-bold leading-tight"
                   style={{ color: "var(--primary)" }}
                 >
-                  Job App
+                  Code Collab
                 </h1>
-                <p className="hidden sm:block text-xs text-muted -mt-0.5 font-medium tracking-wide">Find Job, Earn, Grow</p>
+                <p className="hidden sm:block text-xs text-muted -mt-0.5 font-medium tracking-wide">Learn, Code and Grow</p>
               </div>
             </Link>
 
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center justify-center flex-1 px-8">
               <div className="flex items-center space-x-1 bg-card-bg p-1.5 rounded-2xl border border-border">
-                {navLinks.slice(0, 5).map((link) => {
-                  if (link.name === 'Register' && !isLoggedIn) {
-                    return (
-                      <button
-                        key={link.name}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setLoginCallbackUrl('/register');
-                          setIsLoginOpen(true);
-                        }}
-                        className={`relative px-4 py-2 rounded-xl transition-all duration-300 group whitespace-nowrap ${pathname === link.href
-                          ? 'bg-primary/10 text-primary border border-primary/20'
-                          : 'text-text hover:text-primary hover:bg-muted/10'
-                          }`}
-                      >
-                        <span className="flex items-center space-x-2 text-sm font-semibold">
-                          <link.icon className={`w-4 h-4 ${pathname === link.href ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-                          <span>{link.name}</span>
-                        </span>
-                      </button>
-                    );
-                  }
-
-                  return (
-                    <Link
-                      key={link.name}
-                      href={link.href}
-                      className={`relative px-4 py-2 rounded-xl transition-all duration-300 group whitespace-nowrap ${pathname === link.href
-                        ? 'bg-primary/10 text-primary border border-primary/20'
-                        : 'text-text hover:text-primary hover:bg-muted/10'
-                        }`}
-                    >
-                      <span className="flex items-center space-x-2 text-sm font-semibold">
-                        <link.icon className={`w-4 h-4 ${pathname === link.href ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-                        <span>{link.name}</span>
-                        {link.badge && (
-                          <span
-                            className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 text-[10px] font-bold text-white rounded-full shadow-sm"
-                            style={{ background: "var(--primary)" }}
-                          >
-                            {link.badge}
-                          </span>
-                        )}
-                      </span>
-                    </Link>
-                  );
-                })}
+                <DesktopNavLinks pathname={pathname} />
 
                 {/* More Dropdown */}
                 <div
@@ -810,7 +785,7 @@ const Navbar = memo(() => {
                     onClick={handleMoreClick}
                     aria-expanded={isMoreMenuOpen}
                     aria-haspopup="true"
-                    className={`flex items-center space-x-1 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-300 ${isMoreMenuOpen || navLinks.slice(5).some(link => pathname === link.href)
+                    className={`flex items-center space-x-1 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-300 ${isMoreMenuOpen || secondaryNavLinks.some(link => pathname === link.href)
                       ? 'bg-primary/10 text-primary border border-primary/20'
                       : 'text-text hover:text-primary hover:bg-muted/10'
                       }`}
@@ -826,7 +801,7 @@ const Navbar = memo(() => {
                       className="absolute right-0 top-full mt-2 w-56 origin-top-right z-50 animate-dropdown"
                     >
                       <div className="py-2 bg-card-bg rounded-2xl shadow-xl border border-border overflow-hidden">
-                        {navLinks.slice(5).map((link) => (
+                        {secondaryNavLinks.map((link) => (
                           <Link
                             key={link.name}
                             href={link.href}
@@ -1276,8 +1251,8 @@ const Navbar = memo(() => {
                     className="p-4 rounded-2xl mb-6 border border-border animate-fadeIn"
                     style={{ background: 'var(--background)' }}
                   >
-                    <h3 className="font-bold text-lg text-text mb-2">Welcome to Job App! 🚀</h3>
-                    <p className="text-sm text-muted mb-4">Access job opportunities, resources & career growth</p>
+                    <h3 className="font-bold text-lg text-text mb-2">Welcome to Code Collab! 🚀</h3>
+                    <p className="text-sm text-muted mb-4">Access coding resources, collaborate with teams & grow your skills</p>
                     <div className="flex space-x-3">
                       <button
                         onClick={() => {
@@ -1361,41 +1336,6 @@ const Navbar = memo(() => {
                   {filteredLinks.map((link, index) => {
                     const Icon = link.icon;
                     const isActive = pathname === link.href;
-
-                    if (link.name === 'Register' && !isLoggedIn) {
-                      return (
-                        <button
-                          key={link.name}
-                          onClick={() => {
-                            setIsOpen(false);
-                            setLoginCallbackUrl('/register');
-                            setIsLoginOpen(true);
-                          }}
-                          className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-muted/10 transition-all duration-300 group active:scale-[0.98] border border-transparent hover:border-border animate-fadeIn"
-                          style={{ animationDelay: `${index * 50}ms` }}
-                        >
-                          <div className="flex items-center space-x-4">
-                            <div className={`p-2 rounded-lg ${isActive ? 'bg-primary' : 'bg-muted/10'}`}>
-                              <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-muted'}`} />
-                            </div>
-                            <span className={`font-medium ${isActive ? 'text-primary' : 'text-text'}`}>
-                              {link.name}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {link.badge && (
-                              <span
-                                className="px-2 py-1 text-xs font-bold text-white rounded-full"
-                                style={{ background: "var(--primary)" }}
-                              >
-                                {link.badge}
-                              </span>
-                            )}
-                            <ChevronRight className="w-4 h-4 text-muted group-hover:translate-x-1 transition-transform" />
-                          </div>
-                        </button>
-                      );
-                    }
 
                     return (
                       <Link
