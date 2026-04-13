@@ -1,28 +1,92 @@
 "use client";
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import { useTheme } from '@/src/app/context/ThemeContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CodeSpace() {
   const { theme, activeTheme, mounted } = useTheme();
   const isLight = theme === 'light';
   const [pyodide, setPyodide] = useState(null);
   const [pyodideReady, setPyodideReady] = useState(false);
+  
+  // Resizable panels state
+  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [outputWidth, setOutputWidth] = useState(45);
+  const [consoleHeight, setConsoleHeight] = useState(250);
+  const [isDraggingSidebar, setIsDraggingSidebar] = useState(false);
+  const [isDraggingOutput, setIsDraggingOutput] = useState(false);
+  const [isDraggingConsole, setIsDraggingConsole] = useState(false);
 
-  // Available languages configuration
+  // Available languages configuration with enhanced metadata
   const languages = {
     html: {
       name: 'HTML',
       extension: '.html',
       icon: '🌐',
+      color: '#E34F26',
+      category: 'Web',
       defaultCode: `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>HTML Preview</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Preview</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      text-align: center;
+      max-width: 500px;
+      animation: fadeInUp 0.6s ease-out;
+    }
+    
+    h1 {
+      color: #333;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    p {
+      color: #666;
+      line-height: 1.6;
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
 </head>
 <body>
-  <h1>Hello World!</h1>
-  <p>Start coding HTML here...</p>
+  <div class="card">
+    <h1>✨ Welcome to CodeSpace</h1>
+    <p>Start building amazing things with HTML, CSS, and JavaScript</p>
+  </div>
 </body>
 </html>`
     },
@@ -30,70 +94,275 @@ export default function CodeSpace() {
       name: 'CSS',
       extension: '.css',
       icon: '🎨',
-      defaultCode: `body {
-  font-family: system-ui, -apple-system, sans-serif;
+      color: '#264DE4',
+      category: 'Web',
+      defaultCode: `/* Modern CSS Playground */
+:root {
+  --primary: #667eea;
+  --secondary: #764ba2;
+  --dark: #1a1a2e;
+  --light: #f5f5f5;
+}
+
+* {
   margin: 0;
-  padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 30px;
+  padding: 40px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  text-align: center;
+  animation: float 3s ease-in-out infinite;
 }
 
 h1 {
+  font-size: 3rem;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 1rem;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+.button {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   color: white;
-  text-align: center;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 50px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.button:hover {
+  transform: scale(1.05);
 }`
     },
     javascript: {
       name: 'JavaScript',
       extension: '.js',
       icon: '📜',
-      defaultCode: `// JavaScript Playground
-console.log('Hello from JavaScript!');
+      color: '#F7DF1E',
+      category: 'Web',
+      defaultCode: `// 🚀 Interactive JavaScript Playground
+console.log('🎉 Welcome to the JavaScript Playground!');
 
-function greet(name) {
-  return \`Welcome, \${name}!\`;
-}
+// Modern JavaScript Features
+const greetUser = (name = 'Developer') => {
+  return \`✨ Hello, \${name}! Ready to code?\`;
+};
 
-console.log(greet('Developer'));
+// Async/Await Example
+const fetchMockData = async () => {
+  console.log('📡 Fetching data...');
+  
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        user: 'John Doe',
+        status: 'active',
+        timestamp: new Date().toISOString()
+      });
+    }, 1000);
+  });
+};
 
-// Try writing your code here
-`
+// Array Methods Showcase
+const numbers = [1, 2, 3, 4, 5];
+const doubled = numbers.map(n => n * 2);
+const sum = numbers.reduce((acc, curr) => acc + curr, 0);
+
+console.log('🔢 Numbers:', numbers);
+console.log('✨ Doubled:', doubled);
+console.log('➕ Sum:', sum);
+
+// DOM Manipulation (when running in browser)
+const createCard = () => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = \`
+    <h3>🎯 Interactive Card</h3>
+    <p>Created at: \${new Date().toLocaleTimeString()}</p>
+  \`;
+  document.body.appendChild(card);
+};
+
+// Try it out!
+greetUser('Coder');
+fetchMockData().then(data => console.log('✅ Data received:', data));
+
+// Event Loop Demo
+setTimeout(() => {
+  console.log('⏰ This runs after 1 second');
+}, 1000);
+
+console.log('🚀 Code execution in progress...');`
     },
     python: {
       name: 'Python',
       extension: '.py',
       icon: '🐍',
-      defaultCode: `# Python Playground
-print("Hello from Python!")
+      color: '#3776AB',
+      category: 'Backend',
+      defaultCode: `# 🐍 Python Interactive Playground
+import sys
+import json
+from datetime import datetime
 
-def calculate_sum(a, b):
-    return a + b
+print("🎉 Welcome to Python Playground!")
+print(f"Python Version: {sys.version}")
 
-result = calculate_sum(10, 20)
-print(f"Sum: {result}")
+# Data Structures Demo
+class DataAnalyzer:
+    def __init__(self, data):
+        self.data = data
+    
+    def analyze(self):
+        return {
+            'length': len(self.data),
+            'sum': sum(self.data),
+            'average': sum(self.data) / len(self.data),
+            'max': max(self.data),
+            'min': min(self.data)
+        }
+    
+    def transform(self, func):
+        return [func(x) for x in self.data]
 
-# Write your Python code here
-`
+# Create sample data
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+analyzer = DataAnalyzer(numbers)
+
+# Perform analysis
+analysis = analyzer.analyze()
+print("\\n📊 Data Analysis Results:")
+for key, value in analysis.items():
+    print(f"  {key}: {value}")
+
+# Transformations
+squared = analyzer.transform(lambda x: x ** 2)
+even_numbers = [x for x in numbers if x % 2 == 0]
+
+print(f"\\n✨ Squared numbers: {squared}")
+print(f"🎯 Even numbers: {even_numbers}")
+
+# Dictionary comprehension
+squares_dict = {x: x**2 for x in range(1, 6)}
+print(f"\\n📚 Squares dictionary: {squares_dict}")
+
+# Working with JSON
+sample_data = {
+    "name": "Python Playground",
+    "timestamp": datetime.now().isoformat(),
+    "features": ["dynamic", "versatile", "powerful"]
+}
+print(f"\\n📦 JSON Output:\\n{json.dumps(sample_data, indent=2)}")
+
+print("\\n✅ Python execution completed successfully!")`
     },
     c: {
       name: 'C',
       extension: '.c',
       icon: '⚡',
+      color: '#A8B9CC',
+      category: 'System',
       defaultCode: `#include <stdio.h>
+#include <stdlib.h>
+
+// Function prototypes
+void printHeader();
+int calculateFactorial(int n);
+void demonstrateArrays();
+void demonstratePointers();
 
 int main() {
-    printf("Hello from C!\\n");
+    printHeader();
     
-    int numbers[] = {1, 2, 3, 4, 5};
-    int sum = 0;
+    // Basic operations
+    int a = 10, b = 20;
+    printf("\\n📐 Basic Math:\\n");
+    printf("  %d + %d = %d\\n", a, b, a + b);
+    printf("  %d * %d = %d\\n", a, b, a * b);
     
-    for(int i = 0; i < 5; i++) {
-        sum += numbers[i];
+    // Factorial calculation
+    int num = 5;
+    int fact = calculateFactorial(num);
+    printf("\\n🔢 Factorial of %d is %d\\n", num, fact);
+    
+    // Array demonstration
+    demonstrateArrays();
+    
+    // Pointer demonstration
+    demonstratePointers();
+    
+    // Loop examples
+    printf("\\n🔄 Multiplication Table of 7:\\n");
+    for(int i = 1; i <= 10; i++) {
+        printf("  7 x %2d = %2d\\n", i, 7 * i);
     }
     
-    printf("Sum: %d\\n", sum);
-    
+    printf("\\n✅ C program executed successfully!\\n");
     return 0;
+}
+
+void printHeader() {
+    printf("=======================================\\n");
+    printf("     ⚡ C Programming Playground       \\n");
+    printf("=======================================\\n");
+}
+
+int calculateFactorial(int n) {
+    if (n <= 1) return 1;
+    return n * calculateFactorial(n - 1);
+}
+
+void demonstrateArrays() {
+    printf("\\n📊 Array Operations:\\n");
+    int numbers[] = {10, 20, 30, 40, 50};
+    int size = sizeof(numbers) / sizeof(numbers[0]);
+    int sum = 0;
+    
+    printf("  Numbers: ");
+    for(int i = 0; i < size; i++) {
+        printf("%d ", numbers[i]);
+        sum += numbers[i];
+    }
+    printf("\\n  Sum: %d\\n", sum);
+    printf("  Average: %.2f\\n", (float)sum / size);
+}
+
+void demonstratePointers() {
+    printf("\\n🔍 Pointer Operations:\\n");
+    int value = 100;
+    int *ptr = &value;
+    
+    printf("  Value: %d\\n", value);
+    printf("  Address: %p\\n", (void*)ptr);
+    printf("  Dereferenced: %d\\n", *ptr);
+    
+    // Modify through pointer
+    *ptr = 200;
+    printf("  Modified value: %d\\n", value);
 }`
     }
   };
@@ -104,6 +373,9 @@ int main() {
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState('');
   const [executionTime, setExecutionTime] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [editorFontSize, setEditorFontSize] = useState(14);
   const iframeRef = useRef(null);
 
   // Initialize code states
@@ -119,13 +391,14 @@ int main() {
   useEffect(() => {
     const loadPyodide = async () => {
       try {
-        // Load Pyodide script
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js';
         script.async = true;
         script.onload = async () => {
           if (window.loadPyodide) {
-            const py = await window.loadPyodide();
+            const py = await window.loadPyodide({
+              indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/',
+            });
             setPyodide(py);
             setPyodideReady(true);
           }
@@ -140,30 +413,85 @@ int main() {
     loadPyodide();
   }, []);
 
-  // Get colors from active theme
-  const getThemeColors = () => {
-    const colors = activeTheme?.colors || {};
+  // Resize handlers
+  const handleSidebarResize = useCallback((e) => {
+    if (isDraggingSidebar) {
+      const newWidth = e.clientX;
+      if (newWidth >= 200 && newWidth <= 500) {
+        setSidebarWidth(newWidth);
+      }
+    }
+  }, [isDraggingSidebar]);
+
+  const handleOutputResize = useCallback((e) => {
+    if (isDraggingOutput) {
+      const containerWidth = window.innerWidth;
+      const newWidth = ((containerWidth - e.clientX) / containerWidth) * 100;
+      if (newWidth >= 25 && newWidth <= 70) {
+        setOutputWidth(newWidth);
+      }
+    }
+  }, [isDraggingOutput]);
+
+  const handleConsoleResize = useCallback((e) => {
+    if (isDraggingConsole) {
+      const containerRect = document.querySelector('[data-output-container]')?.getBoundingClientRect();
+      if (containerRect) {
+        const newHeight = containerRect.bottom - e.clientY;
+        if (newHeight >= 150 && newHeight <= 600) {
+          setConsoleHeight(newHeight);
+        }
+      }
+    }
+  }, [isDraggingConsole]);
+
+  useEffect(() => {
+    if (isDraggingSidebar || isDraggingOutput || isDraggingConsole) {
+      const handleMouseMove = isDraggingSidebar ? handleSidebarResize : 
+                             isDraggingOutput ? handleOutputResize : 
+                             handleConsoleResize;
+      const handleMouseUp = () => {
+        setIsDraggingSidebar(false);
+        setIsDraggingOutput(false);
+        setIsDraggingConsole(false);
+      };
+      
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDraggingSidebar, isDraggingOutput, isDraggingConsole, handleSidebarResize, handleOutputResize, handleConsoleResize]);
+
+  // Get CSS variables from theme
+  const getThemeStyles = () => {
+    if (typeof window === 'undefined') return {
+      background: 'var(--background)',
+      foreground: 'var(--foreground)',
+      primary: 'var(--primary)',
+      secondary: 'var(--secondary)',
+      accent: 'var(--accent)',
+      muted: 'var(--muted)',
+      border: 'var(--border)',
+      card: 'var(--card-bg, var(--background))',
+    };
     
     return {
-      bgMain: isLight ? '#ffffff' : '#1e1e1e',
-      bgSidebar: isLight ? '#f3f3f3' : '#252526',
-      bgActivityBar: isLight ? (colors.primary || '#2c2c2c') : '#333333',
-      bgTitleBar: isLight ? '#dddddd' : '#323233',
-      border: isLight ? (colors.border || '#cccccc') : '#444444',
-      textMain: isLight ? (colors.text || '#333333') : '#cccccc',
-      textMuted: isLight ? (colors.muted || '#666666') : '#888888',
-      hoverBg: isLight ? (colors.accent ? `${colors.accent}20` : '#e4e6f1') : '#2a2d2e',
-      activeItemBg: isLight ? (colors.accent ? `${colors.accent}30` : '#e4e6f1') : '#37373d',
-      activeTabBorder: colors.secondary || colors.accent || '#007acc',
-      statusBar: colors.primary || '#007acc',
-      accentColor: colors.accent || colors.secondary || '#007acc',
-      successColor: colors.success || '#10B981',
-      warningColor: colors.warning || '#F59E0B',
-      errorColor: colors.error || '#EF4444',
+      background: 'var(--background)',
+      foreground: 'var(--foreground)',
+      primary: 'var(--primary)',
+      secondary: 'var(--secondary)',
+      accent: 'var(--accent)',
+      muted: 'var(--muted)',
+      border: 'var(--border)',
+      card: 'var(--card-bg, var(--background))',
     };
   };
 
-  const uiColors = getThemeColors();
+  const themeStyles = getThemeStyles();
 
   const handleCodeChange = (value) => {
     setCode(prev => ({
@@ -184,7 +512,6 @@ int main() {
 
     try {
       if (activeLanguage === 'html' || activeLanguage === 'css' || activeLanguage === 'javascript') {
-        // Web languages execution
         const iframe = iframeRef.current;
         if (iframe) {
           const htmlContent = `
@@ -192,13 +519,21 @@ int main() {
             <html>
               <head>
                 <meta charset="UTF-8">
-                <style>${code.css || ''}</style>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                  * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                  }
+                  ${code.css || ''}
+                </style>
               </head>
               <body>
                 ${code.html || ''}
                 <script>
                   (function() {
-                    const methods = ['log', 'error', 'warn', 'info'];
+                    const methods = ['log', 'error', 'warn', 'info', 'debug', 'table'];
                     const originalConsole = {};
                     
                     methods.forEach(method => {
@@ -208,9 +543,11 @@ int main() {
                           type: 'console', 
                           method: method, 
                           message: args.map(arg => {
+                            if (arg === null) return 'null';
+                            if (arg === undefined) return 'undefined';
                             if (typeof arg === 'object') {
                               try {
-                                return JSON.stringify(arg);
+                                return JSON.stringify(arg, null, 2);
                               } catch(e) {
                                 return String(arg);
                               }
@@ -222,15 +559,15 @@ int main() {
                       };
                     });
 
-                    window.onerror = function(message) {
-                      console.error(message);
+                    window.onerror = function(message, source, lineno, colno, error) {
+                      console.error(\`\${message} (line \${lineno}, col \${colno})\`);
                       return true;
                     };
 
                     try {
                       ${code.javascript || ''}
                     } catch(error) {
-                      console.error('Error:', error.message);
+                      console.error('Runtime Error:', error.message);
                     }
                   })();
                 </script>
@@ -240,26 +577,25 @@ int main() {
           iframe.srcdoc = htmlContent;
         }
       } else if (activeLanguage === 'python') {
-        // Python execution using Pyodide (in-browser)
         if (!pyodideReady || !pyodide) {
           setConsoleLogs([{
             method: 'error',
-            message: 'Python runtime is loading. Please wait a moment and try again.',
+            message: '🐍 Python runtime is loading. Please wait a moment and try again.',
             timestamp: new Date().toLocaleTimeString()
           }]);
           return;
         }
 
         try {
-          // Wrap user code to capture output
           const wrappedCode = `
 import sys
 from io import StringIO
 
-# Capture output
 old_stdout = sys.stdout
+old_stderr = sys.stderr
 captured_output = StringIO()
 sys.stdout = captured_output
+sys.stderr = captured_output
 
 try:
 ${code.python.split('\n').map(line => '    ' + line).join('\n')}
@@ -267,8 +603,8 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
-# Restore stdout and get the output
 sys.stdout = old_stdout
+sys.stderr = old_stderr
 final_output = captured_output.getvalue()
 final_output
 `;
@@ -277,27 +613,30 @@ final_output
           const output = result?.toString() || '';
           
           if (output.trim()) {
-            setConsoleLogs([{
-              method: 'log',
-              message: output,
-              timestamp: new Date().toLocaleTimeString()
-            }]);
+            output.split('\n').forEach(line => {
+              if (line.trim()) {
+                setConsoleLogs(prev => [...prev, {
+                  method: 'log',
+                  message: line,
+                  timestamp: new Date().toLocaleTimeString()
+                }]);
+              }
+            });
           } else {
             setConsoleLogs([{
-              method: 'log',
-              message: 'Code executed successfully (no output)',
+              method: 'info',
+              message: '✅ Code executed successfully (no output)',
               timestamp: new Date().toLocaleTimeString()
             }]);
           }
         } catch (error) {
           setConsoleLogs([{
             method: 'error',
-            message: error.toString(),
+            message: `❌ Python Error: ${error.toString()}`,
             timestamp: new Date().toLocaleTimeString()
           }]);
         }
       } else if (activeLanguage === 'c') {
-        // C execution via backend API (Wandbox compiler)
         try {
           const response = await fetch('/api/execute', {
             method: 'POST',
@@ -327,37 +666,22 @@ final_output
           if (result.error) {
             setConsoleLogs(prev => [...prev, {
               method: 'error',
-              message: result.error,
-              timestamp: new Date().toLocaleTimeString()
-            }]);
-          }
-
-          if (!result.output && !result.error) {
-            setConsoleLogs([{
-              method: 'log',
-              message: 'Code executed successfully (no output)',
+              message: `❌ C Error: ${result.error}`,
               timestamp: new Date().toLocaleTimeString()
             }]);
           }
         } catch (error) {
           setConsoleLogs([{
             method: 'error',
-            message: `C Execution Error: ${error.message}`,
+            message: `❌ C Execution Error: ${error.message}`,
             timestamp: new Date().toLocaleTimeString()
           }]);
         }
-      } else {
-        // Other languages fallback
-        setConsoleLogs([{
-          method: 'error',
-          message: `Execution not supported for ${activeLanguage}`,
-          timestamp: new Date().toLocaleTimeString()
-        }]);
       }
     } catch (error) {
       setConsoleLogs([{
         method: 'error',
-        message: `Execution error: ${error.message}`,
+        message: `❌ Execution error: ${error.message}`,
         timestamp: new Date().toLocaleTimeString()
       }]);
     } finally {
@@ -401,235 +725,289 @@ final_output
     return languageMap[activeLanguage] || 'plaintext';
   };
 
+  // Group languages by category
+  const groupedLanguages = Object.entries(languages).reduce((acc, [key, value]) => {
+    if (!acc[value.category]) acc[value.category] = [];
+    acc[value.category].push([key, value]);
+    return acc;
+  }, {});
+
   const styles = {
     container: {
       display: 'flex',
       flexDirection: 'column',
-      height: 'calc(100vh - 93px)',
-      marginTop: '20px',
+      height: 'calc(100vh - 84px)',
+      marginTop: '12px',
       width: '100%',
-      backgroundColor: uiColors.bgMain,
-      color: uiColors.textMain,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      backgroundColor: themeStyles.background,
+      color: themeStyles.foreground,
+      fontFamily: '"Geist Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       overflow: 'hidden',
-      transition: 'background-color 0.3s ease, color 0.3s ease'
+      borderRadius: '16px',
+      boxShadow: '0 24px 64px rgba(0,0,0,0.15), 0 0 0 1px var(--border)',
+      position: 'relative'
     },
     titleBar: {
-      height: '35px',
-      backgroundColor: uiColors.bgTitleBar,
+      height: '52px',
+      background: `linear-gradient(135deg, var(--card-bg), var(--background))`,
       display: 'flex',
       alignItems: 'center',
-      padding: '0 10px',
-      borderBottom: `1px solid ${uiColors.border}`,
+      padding: '0 24px',
+      borderBottom: `1px solid var(--border)`,
       flexShrink: 0,
-      transition: 'background-color 0.3s ease, border-color 0.3s ease'
+      backdropFilter: 'blur(20px)',
+      borderTopLeftRadius: '16px',
+      borderTopRightRadius: '16px',
+      zIndex: 10
     },
     middleSection: {
       display: 'flex',
       flex: 1,
-      overflow: 'hidden'
+      overflow: 'hidden',
+      minHeight: 0,
+      position: 'relative'
     },
     windowControls: {
       display: 'flex',
       gap: '8px',
-      marginRight: '16px'
+      marginRight: '24px'
     },
     windowControl: {
       width: '12px',
       height: '12px',
       borderRadius: '50%',
-      display: 'inline-block'
-    },
-    titleBarContent: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      flex: 1
+      display: 'inline-block',
+      transition: 'transform 0.2s ease',
+      cursor: 'pointer'
     },
     activityBar: {
-      width: '48px',
-      backgroundColor: uiColors.bgActivityBar,
+      width: '64px',
+      background: `var(--card-bg)`,
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: '10px 0',
-      borderRight: `1px solid ${uiColors.border}`,
+      padding: '20px 0',
+      borderRight: `1px solid var(--border)`,
       flexShrink: 0,
-      transition: 'background-color 0.3s ease'
+      gap: '16px'
     },
     activityIcon: {
-      width: '48px',
-      height: '48px',
+      width: '40px',
+      height: '40px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontSize: '24px',
+      fontSize: '22px',
       cursor: 'pointer',
-      transition: 'opacity 0.2s',
+      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
       opacity: 0.6,
+      borderRadius: '10px',
+      position: 'relative'
     },
     mainContent: {
       display: 'flex',
       flex: 1,
-      overflow: 'hidden'
+      overflow: 'hidden',
+      minWidth: 0
     },
     sidebar: {
-      width: '250px',
-      backgroundColor: uiColors.bgSidebar,
-      borderRight: `1px solid ${uiColors.border}`,
+      width: sidebarCollapsed ? '0px' : `${sidebarWidth}px`,
+      backgroundColor: 'var(--background)',
+      borderRight: `1px solid var(--border)`,
       display: 'flex',
       flexDirection: 'column',
-      transition: 'background-color 0.3s ease, border-color 0.3s ease'
+      transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      overflow: 'hidden',
+      position: 'relative'
+    },
+    sidebarResizer: {
+      width: '5px',
+      backgroundColor: 'transparent',
+      cursor: 'col-resize',
+      position: 'absolute',
+      right: '-2px',
+      top: 0,
+      bottom: 0,
+      zIndex: 10,
+      transition: 'background-color 0.2s ease'
     },
     sidebarHeader: {
-      padding: '12px 16px',
+      padding: '24px 16px 16px',
+      fontSize: '12px',
+      fontWeight: 700,
+      textTransform: 'uppercase',
+      letterSpacing: '1.2px',
+      color: themeStyles.muted,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between'
+    },
+    categoryHeader: {
+      padding: '16px 20px 8px',
       fontSize: '11px',
       fontWeight: 600,
       textTransform: 'uppercase',
-      letterSpacing: '0.5px',
-      color: uiColors.textMuted,
-      borderBottom: `1px solid ${uiColors.border}`
+      letterSpacing: '1px',
+      color: themeStyles.muted,
+      marginTop: '4px'
     },
     fileList: {
       flex: 1,
-      overflowY: 'auto'
+      overflowY: 'auto',
+      padding: '4px 0'
     },
     editorContainer: {
       flex: 1,
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden'
-    },
-    tabsContainer: {
-      display: 'flex',
-      backgroundColor: uiColors.bgSidebar,
-      borderBottom: `1px solid ${uiColors.border}`,
-      padding: '0 8px',
-      alignItems: 'center',
-      transition: 'background-color 0.3s ease, border-color 0.3s ease',
-      overflowX: 'auto'
+      overflow: 'hidden',
+      minWidth: 0,
+      backgroundColor: themeStyles.background
     },
     outputContainer: {
-      width: '45%',
+      width: `${outputWidth}%`,
       display: 'flex',
       flexDirection: 'column',
-      borderLeft: `1px solid ${uiColors.border}`,
-      backgroundColor: uiColors.bgMain,
-      transition: 'background-color 0.3s ease, border-color 0.3s ease'
+      borderLeft: `1px solid var(--border)`,
+      backgroundColor: themeStyles.background,
+      position: 'relative',
+      boxShadow: '-4px 0 24px rgba(0,0,0,0.02)'
+    },
+    outputResizer: {
+      width: '5px',
+      backgroundColor: 'transparent',
+      cursor: 'col-resize',
+      position: 'absolute',
+      left: '-2px',
+      top: 0,
+      bottom: 0,
+      zIndex: 10,
+      transition: 'background-color 0.2s ease'
+    },
+    consoleResizer: {
+      height: '5px',
+      backgroundColor: 'transparent',
+      cursor: 'row-resize',
+      position: 'absolute',
+      top: '-2px',
+      left: 0,
+      right: 0,
+      zIndex: 10,
+      transition: 'background-color 0.2s ease'
     },
     outputHeader: {
-      padding: '8px 16px',
-      backgroundColor: uiColors.bgSidebar,
-      borderBottom: `1px solid ${uiColors.border}`,
+      padding: '12px 24px',
+      backgroundColor: 'var(--card-bg)',
+      borderBottom: `1px solid var(--border)`,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      transition: 'background-color 0.3s ease, border-color 0.3s ease'
+      height: '54px',
+      flexShrink: 0
     },
     runButton: {
-      padding: '6px 16px',
-      backgroundColor: uiColors.accentColor,
+      padding: '8px 24px',
+      background: `linear-gradient(135deg, var(--primary), var(--secondary))`,
       color: 'white',
       border: 'none',
-      borderRadius: '4px',
-      fontSize: '12px',
-      fontWeight: 500,
+      borderRadius: '8px',
+      fontSize: '13px',
+      fontWeight: 600,
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
-      gap: '6px',
-      transition: 'all 0.2s ease',
-      boxShadow: `0 2px 4px ${uiColors.accentColor}40`
+      gap: '8px',
+      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+      boxShadow: '0 4px 12px rgba(var(--primary), 0.2)'
     },
     outputArea: {
       flex: 1,
-      backgroundColor: isLight ? '#f8f9fa' : '#1e1e1e',
+      backgroundColor: themeStyles.background,
       overflow: 'auto',
-      padding: '16px',
-      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-      fontSize: '13px',
-      lineHeight: '1.6'
+      padding: '24px',
+      fontFamily: '"Geist Mono", Consolas, Monaco, "Courier New", monospace',
+      fontSize: '14px',
+      lineHeight: '1.7'
     },
     consoleContainer: {
-      height: '200px',
-      backgroundColor: uiColors.bgSidebar,
-      borderTop: `1px solid ${uiColors.border}`,
+      height: `${consoleHeight}px`,
+      backgroundColor: 'var(--card-bg)',
+      borderTop: `1px solid var(--border)`,
       display: 'flex',
       flexDirection: 'column',
-      transition: 'background-color 0.3s ease, border-color 0.3s ease'
+      position: 'relative'
     },
     consoleHeader: {
-      padding: '8px 16px',
-      backgroundColor: uiColors.bgTitleBar,
-      borderBottom: `1px solid ${uiColors.border}`,
+      padding: '12px 24px',
+      backgroundColor: 'var(--card-bg)',
+      borderBottom: `1px solid var(--border)`,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      transition: 'background-color 0.3s ease, border-color 0.3s ease'
+      height: '48px',
+      flexShrink: 0
     },
     clearButton: {
-      padding: '4px 12px',
+      padding: '6px 14px',
       backgroundColor: 'transparent',
-      color: uiColors.textMain,
-      border: `1px solid ${uiColors.border}`,
-      borderRadius: '4px',
-      fontSize: '11px',
+      color: themeStyles.foreground,
+      border: `1px solid var(--border)`,
+      borderRadius: '6px',
+      fontSize: '12px',
+      fontWeight: 500,
       cursor: 'pointer',
-      transition: 'all 0.15s ease'
+      transition: 'all 0.2s ease'
     },
     consoleOutput: {
       flex: 1,
       overflowY: 'auto',
-      padding: '12px 16px',
-      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-      fontSize: '12px',
-      lineHeight: '1.5',
-      color: uiColors.textMain
+      padding: '16px 24px',
+      fontFamily: '"Geist Mono", Consolas, Monaco, "Courier New", monospace',
+      fontSize: '13px',
+      lineHeight: '1.6',
+      color: themeStyles.foreground
     },
     statusBar: {
-      height: '22px',
-      backgroundColor: uiColors.statusBar,
+      height: '36px',
+      background: `linear-gradient(90deg, var(--primary), var(--secondary))`,
       color: 'white',
       display: 'flex',
       alignItems: 'center',
-      padding: '0 12px',
+      padding: '0 24px',
       fontSize: '12px',
       flexShrink: 0,
-      transition: 'background-color 0.3s ease'
+      borderBottomLeftRadius: '16px',
+      borderBottomRightRadius: '16px',
+      fontWeight: 500,
+      letterSpacing: '0.3px'
     },
     statusBarItem: {
       display: 'flex',
       alignItems: 'center',
-      gap: '4px',
-      marginRight: '16px'
+      gap: '8px',
+      marginRight: '24px',
+      padding: '4px 10px',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      transition: 'background 0.2s ease'
     }
   };
 
-  const getTabStyle = (lang) => ({
-    padding: '8px 16px',
-    fontSize: '13px',
-    cursor: 'pointer',
+  const getFileItemStyle = (lang, color) => ({
+    padding: '12px 20px',
+    margin: '4px 12px',
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
-    borderBottom: `2px solid ${activeLanguage === lang ? uiColors.activeTabBorder : 'transparent'}`,
-    transition: 'all 0.15s ease',
-    color: activeLanguage === lang ? uiColors.textMain : uiColors.textMuted,
-    backgroundColor: activeLanguage === lang ? `${uiColors.accentColor}10` : 'transparent',
-    whiteSpace: 'nowrap'
-  });
-
-  const getFileItemStyle = (lang) => ({
-    padding: '8px 16px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
+    gap: '14px',
     cursor: 'pointer',
-    fontSize: '13px',
-    transition: 'all 0.15s ease',
-    backgroundColor: activeLanguage === lang ? uiColors.activeItemBg : 'transparent',
-    color: activeLanguage === lang ? uiColors.textMain : uiColors.textMuted,
-    borderLeft: activeLanguage === lang ? `3px solid ${uiColors.activeTabBorder}` : '3px solid transparent'
+    fontSize: '14px',
+    fontWeight: 500,
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    backgroundColor: activeLanguage === lang ? `var(--accent)` : 'transparent',
+    color: activeLanguage === lang ? 'var(--foreground)' : themeStyles.foreground,
+    borderRadius: '10px',
+    borderLeft: activeLanguage === lang ? `4px solid ${color || themeStyles.accent}` : '4px solid transparent',
+    position: 'relative'
   });
 
   if (!mounted) {
@@ -640,10 +1018,11 @@ final_output
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: isLight ? '#ffffff' : '#1e1e1e'
+        background: `linear-gradient(135deg, ${themeStyles.background}, ${themeStyles.card})`,
+        borderRadius: '12px'
       }}>
-        <div style={{ fontSize: '14px', color: isLight ? '#666' : '#999' }}>
-          Loading CodeSpace...
+        <div style={{ fontSize: '14px', color: themeStyles.muted }}>
+          🚀 Loading CodeSpace...
         </div>
       </div>
     );
@@ -656,72 +1035,116 @@ final_output
       {/* Title Bar */}
       <div style={styles.titleBar}>
         <div style={styles.windowControls}>
-          <span style={{...styles.windowControl, backgroundColor: '#ff5f56'}} />
-          <span style={{...styles.windowControl, backgroundColor: '#ffbd2e'}} />
-          <span style={{...styles.windowControl, backgroundColor: '#27c93f'}} />
+          <div style={{...styles.windowControl, backgroundColor: '#ff5f56'}} 
+               onClick={() => window.close?.()} />
+          <div style={{...styles.windowControl, backgroundColor: '#ffbd2e'}} 
+               onClick={() => window.location.reload()} />
+          <div style={{...styles.windowControl, backgroundColor: '#27c93f'}} 
+               onClick={() => console.log('Maximize')} />
         </div>
-        <div style={styles.titleBarContent}>
-          <span>{languages[activeLanguage].icon}</span>
-          <span style={{ fontSize: '13px', color: uiColors.textMain, fontWeight: 500 }}>
-            CodeSpace - {languages[activeLanguage].name} Playground
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+          <span style={{ fontSize: '22px' }}>{languages[activeLanguage].icon}</span>
+          <span style={{ fontSize: '14px', fontWeight: 600 }}>
+            CodeSpace Studio
           </span>
+          <span style={{ 
+            fontSize: '11px', 
+            color: themeStyles.muted,
+            background: `${themeStyles.accent}20`,
+            padding: '4px 8px',
+            borderRadius: '6px'
+          }}>
+            {languages[activeLanguage].name}
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <div 
+            style={{ cursor: 'pointer', opacity: 0.7 }}
+            onMouseEnter={e => e.currentTarget.style.opacity = 1}
+            onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
+            onClick={() => setShowShortcuts(!showShortcuts)}
+          >
+            ⌨️
+          </div>
+          <div 
+            style={{ cursor: 'pointer', opacity: 0.7 }}
+            onMouseEnter={e => e.currentTarget.style.opacity = 1}
+            onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
+          >
+            ⚙️
+          </div>
         </div>
       </div>
 
       {/* Middle Section */}
       <div style={styles.middleSection}>
-        {/* Activity Bar */}
-        <div style={styles.activityBar}>
-          <div style={styles.activityIcon}>📁</div>
-          <div style={styles.activityIcon}>🔍</div>
-          <div style={styles.activityIcon}>🔧</div>
-          <div style={styles.activityIcon}>📦</div>
-        </div>
-
         {/* Main Content */}
         <div style={styles.mainContent}>
-          {/* Sidebar with file explorer */}
+          {/* Sidebar */}
           <div style={styles.sidebar}>
-            <div style={styles.sidebarHeader}>
-              EXPLORER
-            </div>
-            <div style={styles.fileList}>
-              {Object.entries(languages).map(([lang, config]) => (
-                <div 
-                  key={lang}
-                  style={getFileItemStyle(lang)}
-                  onClick={() => setActiveLanguage(lang)}
-                  onMouseEnter={(e) => {
-                    if (activeLanguage !== lang) e.currentTarget.style.backgroundColor = uiColors.hoverBg;
-                  }}
-                  onMouseLeave={(e) => {
-                    if (activeLanguage !== lang) e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
+            {!sidebarCollapsed && (
+              <AnimatePresence>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
                 >
-                  <span>{config.icon}</span>
-                  <span>playground{config.extension}</span>
-                </div>
-              ))}
-            </div>
+                  <div style={styles.sidebarHeader}>
+                    <span>EXPLORER</span>
+                    <span style={{ cursor: 'pointer', fontSize: '16px' }}>⋯</span>
+                  </div>
+                  <div style={styles.fileList}>
+                    {Object.entries(groupedLanguages).map(([category, langs]) => (
+                      <div key={category}>
+                        <div style={styles.categoryHeader}>{category}</div>
+                        {langs.map(([lang, config]) => (
+                          <motion.div 
+                            key={lang}
+                            style={getFileItemStyle(lang, config.color)}
+                            onClick={() => setActiveLanguage(lang)}
+                            whileHover={{ x: 4 }}
+                            whileTap={{ scale: 0.98 }}
+                            onMouseEnter={(e) => {
+                              if (activeLanguage !== lang) {
+                                e.currentTarget.style.backgroundColor = `${themeStyles.accent}10`;
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (activeLanguage !== lang) {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            <span style={{ fontSize: '18px' }}>{config.icon}</span>
+                            <span style={{ flex: 1 }}>playground{config.extension}</span>
+                            {activeLanguage === lang && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                style={{ fontSize: '12px', opacity: 0.6 }}
+                              >
+                                ●
+                              </motion.span>
+                            )}
+                          </motion.div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            )}
+            <div 
+              style={styles.sidebarResizer}
+              onMouseDown={() => setIsDraggingSidebar(true)}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.accent}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            />
           </div>
 
           {/* Editor Area */}
           <div style={styles.editorContainer}>
-            {/* Tabs */}
-            <div style={styles.tabsContainer}>
-              {Object.entries(languages).map(([lang, config]) => (
-                <div 
-                  key={lang}
-                  style={getTabStyle(lang)} 
-                  onClick={() => setActiveLanguage(lang)}
-                >
-                  <span>{config.icon}</span>
-                  <span>{config.name}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Editor */}
             <div style={{ flex: 1, overflow: 'hidden' }}>
               <Editor
                 height="100%"
@@ -732,7 +1155,7 @@ final_output
                 options={{
                   automaticLayout: true,
                   minimap: { enabled: false },
-                  fontSize: 14,
+                  fontSize: editorFontSize,
                   fontFamily: 'Consolas, Monaco, "Courier New", monospace',
                   lineNumbers: 'on',
                   glyphMargin: false,
@@ -746,39 +1169,58 @@ final_output
                   cursorBlinking: 'smooth',
                   formatOnPaste: true,
                   formatOnType: true,
+                  bracketPairColorization: { enabled: true },
+                  renderLineHighlight: 'all',
+                  selectionHighlight: true,
+                  occurrencesHighlight: true,
+                  codeLens: true,
+                  quickSuggestions: true
                 }}
               />
             </div>
           </div>
 
           {/* Output Panel */}
-          <div style={styles.outputContainer}>
+          <div style={styles.outputContainer} data-output-container>
+            <div 
+              style={styles.outputResizer}
+              onMouseDown={() => setIsDraggingOutput(true)}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.accent}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            />
+            
             <div style={styles.outputHeader}>
-              <span style={{ fontSize: '13px', fontWeight: 500, color: uiColors.textMain }}>
-                Output
-              </span>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {executionTime && (
-                  <span style={{ fontSize: '11px', color: uiColors.textMuted }}>
-                    {executionTime}ms
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 600 }}>
+                  {showPreview ? 'Preview' : 'Output'}
+                </span>
+                {showPreview && (
+                  <span style={{ 
+                    fontSize: '10px', 
+                    padding: '2px 8px', 
+                    background: `${themeStyles.accent}20`,
+                    borderRadius: '12px'
+                  }}>
+                    Live
                   </span>
                 )}
-                <button 
+              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {executionTime && (
+                  <span style={{ fontSize: '11px', fontFamily: 'monospace', color: themeStyles.muted }}>
+                    ⚡ {executionTime}ms
+                  </span>
+                )}
+                <motion.button 
                   style={styles.runButton}
                   onClick={runCode}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.filter = 'brightness(1.1)';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.filter = 'brightness(1)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
+                  whileHover={{ scale: 1.02, y: -1 }}
+                  whileTap={{ scale: 0.98 }}
                   disabled={isRunning}
                 >
                   <span>{isRunning ? '⏳' : '▶'}</span>
-                  <span>{isRunning ? 'Running...' : 'Run'}</span>
-                </button>
+                  <span>{isRunning ? 'Running...' : 'Run Code'}</span>
+                </motion.button>
               </div>
             </div>
             
@@ -800,15 +1242,24 @@ final_output
                 {output ? (
                   <pre style={{ 
                     margin: 0, 
-                    color: uiColors.textMain,
+                    color: themeStyles.foreground,
                     whiteSpace: 'pre-wrap',
                     wordWrap: 'break-word'
                   }}>
                     {output}
                   </pre>
                 ) : (
-                  <div style={{ color: uiColors.textMuted, fontStyle: 'italic' }}>
-                    Run your code to see output...
+                  <div style={{ 
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    color: themeStyles.muted,
+                    gap: '12px'
+                  }}>
+                    <span style={{ fontSize: '48px', opacity: 0.3 }}>🚀</span>
+                    <span style={{ fontStyle: 'italic' }}>Click Run to see output...</span>
                   </div>
                 )}
               </div>
@@ -816,53 +1267,82 @@ final_output
 
             {/* Console Output */}
             <div style={styles.consoleContainer}>
+              <div 
+                style={styles.consoleResizer}
+                onMouseDown={() => setIsDraggingConsole(true)}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.accent}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              />
+              
               <div style={styles.consoleHeader}>
-                <span style={{ fontSize: '12px', fontWeight: 500, color: uiColors.textMain }}>
-                  Console
-                </span>
-                <button 
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600 }}>Console</span>
+                  <span style={{ fontSize: '10px', color: themeStyles.muted }}>
+                    {consoleLogs.length} entries
+                  </span>
+                </div>
+                <motion.button 
                   style={styles.clearButton}
                   onClick={clearConsole}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = uiColors.hoverBg;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  Clear
-                </button>
+                  Clear All
+                </motion.button>
               </div>
               <div style={styles.consoleOutput}>
                 {consoleLogs.length === 0 ? (
-                  <div style={{ color: uiColors.textMuted, fontStyle: 'italic' }}>
-                    No console output
+                  <div style={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    color: themeStyles.muted,
+                    gap: '8px',
+                    fontStyle: 'italic'
+                  }}>
+                    <span>💻</span>
+                    <span>No console output yet</span>
                   </div>
                 ) : (
                   consoleLogs.map((log, index) => (
-                    <div key={index} style={{ 
-                      marginBottom: '4px',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '8px'
-                    }}>
+                    <motion.div 
+                      key={index} 
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.02 }}
+                      style={{ 
+                        marginBottom: '8px',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '12px',
+                        padding: '4px 0',
+                        borderBottom: index !== consoleLogs.length - 1 ? `1px solid ${themeStyles.border}30` : 'none'
+                      }}
+                    >
                       <span style={{ 
-                        color: uiColors.textMuted,
-                        fontSize: '11px',
-                        userSelect: 'none'
+                        color: themeStyles.muted,
+                        fontSize: '10px',
+                        fontFamily: 'monospace',
+                        minWidth: '70px'
                       }}>
                         {log.timestamp}
                       </span>
                       <span style={{ 
-                        color: log.method === 'error' ? uiColors.errorColor : 
-                               log.method === 'warn' ? uiColors.warningColor : 
-                               uiColors.textMain
+                        color: log.method === 'error' ? '#EF4444' : 
+                               log.method === 'warn' ? '#F59E0B' : 
+                               log.method === 'info' ? '#3B82F6' :
+                               themeStyles.foreground,
+                        flex: 1,
+                        fontFamily: 'monospace',
+                        fontSize: '12px'
                       }}>
                         {log.method === 'error' && '❌ '}
                         {log.method === 'warn' && '⚠️ '}
+                        {log.method === 'info' && 'ℹ️ '}
                         {log.message}
                       </span>
-                    </div>
+                    </motion.div>
                   ))
                 )}
               </div>
@@ -875,19 +1355,76 @@ final_output
       <div style={styles.statusBar}>
         <div style={styles.statusBarItem}>
           <span>{languages[activeLanguage].icon}</span>
-          <span>{languages[activeLanguage].name}</span>
+          <span style={{ fontWeight: 500 }}>{languages[activeLanguage].name}</span>
         </div>
         <div style={styles.statusBarItem}>
           <span>{isRunning ? '⏳' : '✅'}</span>
           <span>{isRunning ? 'Running' : 'Ready'}</span>
         </div>
+        <div style={styles.statusBarItem}>
+          <span>🔒</span>
+          <span>Secure</span>
+        </div>
         <div style={{...styles.statusBarItem, marginLeft: 'auto'}}>
-          <span>UTF-8</span>
+          <span onClick={() => setEditorFontSize(prev => Math.max(10, prev - 1))} style={{ cursor: 'pointer' }}>A-</span>
+          <span style={{ margin: '0 4px' }}>{editorFontSize}</span>
+          <span onClick={() => setEditorFontSize(prev => Math.min(20, prev + 1))} style={{ cursor: 'pointer' }}>A+</span>
         </div>
         <div style={styles.statusBarItem}>
-          <span>Ln 1, Col 1</span>
+          <span>UTF-8</span>
         </div>
       </div>
+
+      {/* Keyboard Shortcuts Modal */}
+      <AnimatePresence>
+        {showShortcuts && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.5)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000
+            }}
+            onClick={() => setShowShortcuts(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              style={{
+                background: themeStyles.card,
+                borderRadius: '12px',
+                padding: '24px',
+                maxWidth: '500px',
+                width: '90%',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 style={{ marginBottom: '20px' }}>⌨️ Keyboard Shortcuts</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div><strong>Ctrl/Cmd + S</strong> - Save code</div>
+                <div><strong>Ctrl/Cmd + R</strong> - Run code</div>
+                <div><strong>Ctrl/Cmd + /</strong> - Toggle comment</div>
+                <div><strong>Ctrl/Cmd + F</strong> - Search</div>
+                <div><strong>Ctrl/Cmd + H</strong> - Replace</div>
+                <div><strong>Alt + ↑/↓</strong> - Move line up/down</div>
+                <div><strong>Ctrl/Cmd + D</strong> - Add selection to next match</div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
