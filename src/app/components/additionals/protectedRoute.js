@@ -65,7 +65,7 @@ export default function ProtectedRoute({ children }) {
         <LoginModal
           isOpen={showLoginModal}
           onClose={handleLoginClose}
-          callbackUrl={pathname}
+          callbackUrl={pathname || "/"}
         />
         {/* Render children in background but they won't be interactive */}
         <div className="pointer-events-none opacity-50">
