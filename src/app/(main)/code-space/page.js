@@ -1,10 +1,16 @@
 "use client";
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useContext } from 'react';
 import Editor from '@monaco-editor/react';
 import { useTheme } from '@/src/app/context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { UserContext } from "@/src/app/components/additionals/userContext";
+import ProtectedRoute from "@/src/app/components/additionals/protectedRoute";
 
-export default function CodeSpace() {
+function CodeSpaceContent() {
+  const { isAuthenticated, loading: authLoading } = useContext(UserContext);
+  const router = useRouter();
+
   const { theme, activeTheme, mounted } = useTheme();
   const isLight = theme === 'light';
   const [pyodide, setPyodide] = useState(null);
@@ -1010,7 +1016,9 @@ final_output
     position: 'relative'
   });
 
-  if (!mounted) {
+  // Removed authentication redirect for broader access
+
+  if (!mounted || authLoading) {
     return (
       <div style={{
         height: 'calc(100vh - 93px)',
@@ -1045,7 +1053,7 @@ final_output
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
           <span style={{ fontSize: '22px' }}>{languages[activeLanguage].icon}</span>
           <span style={{ fontSize: '14px', fontWeight: 600 }}>
-            CodeSpace Studio
+            Code Collabe
           </span>
           <span style={{ 
             fontSize: '11px', 
@@ -1426,5 +1434,13 @@ final_output
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function CodeSpace() {
+  return (
+    <ProtectedRoute>
+      <CodeSpaceContent />
+    </ProtectedRoute>
   );
 }

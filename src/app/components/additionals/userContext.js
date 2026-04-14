@@ -13,9 +13,9 @@ export function UserProvider({ children }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Initialize auth state from storage
-  const initializeAuth = useCallback(() => {
-    // Don't reinitialize if already initialized
+  // Initialize auth state from storage and NextAuth session
+  const initializeAuth = useCallback(async () => {
+    // Check if we've already initialized
     if (isInitialized) {
       return;
     }
@@ -41,7 +41,7 @@ export function UserProvider({ children }) {
         const userData = storedUser ? JSON.parse(storedUser) : null;
         if (userData) {
           // Fetch complete student data from API
-          fetchCompleteStudentData(userData._id || userData.id);
+          await fetchCompleteStudentData(userData._id || userData.id);
         } else {
           setAuthState({
             user: null,
@@ -52,14 +52,54 @@ export function UserProvider({ children }) {
           setIsInitialized(true);
         }
       } else {
-        // No authentication found
-        setAuthState({
-          user: null,
-          isAuthenticated: false,
-          isAdmin: false,
-          loading: false
-        });
-        setIsInitialized(true);
+        // Check for NextAuth session (OAuth login like Google, Facebook)
+        try {
+          const sessionResponse = await fetch("/api/auth/session");
+          if (sessionResponse.ok) {
+            const session = await sessionResponse.json();
+            if (session && session.user) {
+              // User is authenticated via NextAuth/OAuth
+              // Store the user data for future reference
+              localStorage.setItem("user", JSON.stringify(session.user));
+              localStorage.setItem("nextAuthSession", JSON.stringify(session));
+              setAuthState({
+                user: session.user,
+                isAuthenticated: true,
+                isAdmin: false,
+                loading: false
+              });
+              setIsInitialized(true);
+            } else {
+              // No session and no token
+              setAuthState({
+                user: null,
+                isAuthenticated: false,
+                isAdmin: false,
+                loading: false
+              });
+              setIsInitialized(true);
+            }
+          } else {
+            // No session and no token
+            setAuthState({
+              user: null,
+              isAuthenticated: false,
+              isAdmin: false,
+              loading: false
+            });
+            setIsInitialized(true);
+          }
+        } catch (sessionError) {
+          console.error("Error checking NextAuth session:", sessionError);
+          // No session and no token
+          setAuthState({
+            user: null,
+            isAuthenticated: false,
+            isAdmin: false,
+            loading: false
+          });
+          setIsInitialized(true);
+        }
       }
     } catch (error) {
       console.error("Auth initialization error:", error);
@@ -75,7 +115,7 @@ export function UserProvider({ children }) {
       });
       setIsInitialized(true);
     }
-  }, []);
+  }, [isInitialized]);
 
   // Fetch complete student data from API
   const fetchCompleteStudentData = useCallback(async (userId) => {
@@ -127,7 +167,59 @@ export function UserProvider({ children }) {
 
   useEffect(() => {
     initializeAuth();
+
+    // Listen for focus events to re-check auth state
+    // (in case user logged in from another tab)
+    const handleFocus = () => {
+      setIsInitialized(false); // Reset to re-initialize
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, [initializeAuth]);
+
+  // Monitor for session changes
+  useEffect(() => {
+    if (isInitialized) {
+      const checkSessionInterval = setInterval(async () => {
+        try {
+          const sessionResponse = await fetch("/api/auth/session", {
+            cache: "no-store"
+          });
+          if (sessionResponse.ok) {
+            const session = await sessionResponse.json();
+            if (session && session.user && !authState.isAuthenticated) {
+              // New session detected! User just logged in
+              localStorage.setItem("user", JSON.stringify(session.user));
+              localStorage.setItem("nextAuthSession", JSON.stringify(session));
+              setAuthState({
+                user: session.user,
+                isAuthenticated: true,
+                isAdmin: false,
+                loading: false
+              });
+            } else if (!session || !session.user) {
+              // Session expired
+              if (authState.isAuthenticated && !authState.isAdmin && !localStorage.getItem("token")) {
+                // User was authenticated via NextAuth but session expired
+                localStorage.removeItem("nextAuthSession");
+                setAuthState({
+                  user: null,
+                  isAuthenticated: false,
+                  isAdmin: false,
+                  loading: false
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error checking session:", error);
+        }
+      }, 2000); // Check every 2 seconds
+
+      return () => clearInterval(checkSessionInterval);
+    }
+  }, [isInitialized, authState.isAuthenticated, authState.isAdmin]);
 
   const login = useCallback((userData, isAdminLogin = false, token = null) => {
     try {
@@ -165,33 +257,56 @@ export function UserProvider({ children }) {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("token");
-    localStorage.removeItem("onlineCourseUser")
-    localStorage.removeItem("onlineCourseUserToken")
-    localStorage.removeItem("nextauth.message")
-    localStorage.removeItem("adminData")
-    
-    const newAuthState = {
-      user: null,
-      isAuthenticated: false,
-      isAdmin: false,
-      loading: false
-    };
-    
-    // Reset all state to ensure proper re-render
-    setAuthState(newAuthState);
-    setIsInitialized(false);
-    setRefreshKey(prev => prev + 1);
-    
-    // Force immediate re-render
-    setTimeout(() => {
-      setAuthState(prev => ({ ...prev }));
-      // Dispatch custom event for navbar
-      window.dispatchEvent(new CustomEvent('authStateChanged'));
-    }, 0);
+  const logout = useCallback(async () => {
+    try {
+      // Sign out from NextAuth if there's a session
+      try {
+        const sessionResponse = await fetch("/api/auth/session");
+        if (sessionResponse.ok) {
+          const session = await sessionResponse.json();
+          if (session && session.user) {
+            // There's an active NextAuth session, sign it out
+            await fetch("/api/auth/signout", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" }
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error signing out from NextAuth:", error);
+      }
+
+      // Clear all local storage
+      localStorage.removeItem("user");
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("token");
+      localStorage.removeItem("onlineCourseUser");
+      localStorage.removeItem("onlineCourseUserToken");
+      localStorage.removeItem("nextauth.message");
+      localStorage.removeItem("nextAuthSession");
+      localStorage.removeItem("adminData");
+      
+      const newAuthState = {
+        user: null,
+        isAuthenticated: false,
+        isAdmin: false,
+        loading: false
+      };
+      
+      // Reset all state to ensure proper re-render
+      setAuthState(newAuthState);
+      setIsInitialized(false);
+      setRefreshKey(prev => prev + 1);
+      
+      // Force immediate re-render
+      setTimeout(() => {
+        setAuthState(prev => ({ ...prev }));
+        // Dispatch custom event for navbar
+        window.dispatchEvent(new CustomEvent('authStateChanged'));
+      }, 0);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   }, []);
 
   // Check fee status and course completion
